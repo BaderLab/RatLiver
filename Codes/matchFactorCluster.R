@@ -1,51 +1,116 @@
-mydata <- read.csv("https://stats.idre.ucla.edu/stat/data/binary.csv")
-## view the first few rows of the data
-head(mydata)
-summary(mydata)
+#########################
+##### Automation of matching factors and clusters/covariates(strain) ####
+##https://www.r-bloggers.com/2018/01/how-to-implement-random-forests-in-r/
+source('Codes/Functions.R')
+###### loading the required libraries #######
+library(randomForest)
+require(caTools)
 
-xtabs(~admit + rank, data = mydata)
-mydata$rank <- factor(mydata$rank)
-mylogit <- glm(admit ~ gre + gpa + rank, data = mydata, family = "binomial")
-summary(mylogit)
-
-
+####### loading the data #######
 old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
 load(old_data_scClustViz_object)
-cluster.df <- data.frame(cluster=sCVdata_list$res.0.6@Clusters)
-cluster.df$cluster <- paste0('cluster_', as.character(cluster.df$cluster))
-aFeature = 'cluster_3'
-cluster.df$feature <- ifelse(cluster.df$cluster == aFeature, aFeature, 'other')
-head(cluster.df)
+
+
+###########################
+##### Training a random forest model to predict the strain labels #####
+##########################
 
 varimax_df <- data.frame(readRDS('~/RatLiver/Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds')$rotScores)
 colnames(varimax_df) <- paste0('varPC_', 1:ncol(varimax_df))
-varimax_df$cluster <- as.factor(cluster.df$feature)
 varimax_df$strain <-as.factor(sapply(strsplit(x = rownames(varimax_df), '_'), '[[', 2))
 table(varimax_df$strain)
 
+### splitting the train and test data
+sample = sample.split(varimax_df$strain, SplitRatio = .75)
+train = subset(varimax_df, sample == TRUE) 
+test = subset(varimax_df, sample == FALSE)
+
+### training the RF model
+strain_pred_RF <- randomForest(strain ~ . , data = train, importance = TRUE)
+# saveRDS(strain_pred_RF, 'Objects/strain_pred_RF.rds')
+strain_pred_RF <- readRDS('Objects/strain_pred_RF.rds')
+
+pred = predict(strain_pred_RF, newdata=test[,-ncol(test)])
+### generating a confusion matrix
+cm = table(test[,ncol(test)], pred)
+cm
+#### evaluating feature importance 
+imp.df = data.frame(importance(strain_pred_RF))        
+imp.df[order(imp.df$MeanDecreaseAccuracy, decreasing = T),]
+varImpPlot(strain_pred_RF)   
 
 
-## logistic regression does not work on data sets in which a feature perfectly seperates the datasets  
-head(varimax_df)
-varimax_df <- varimax_df[,-5]
-mylogit <- glm(strain ~ . , data = varimax_df, family = "binomial", control=glm.control(maxit=50)) #+ varPC_2 + varPC_3
-summary(mylogit)
 
 
-### running random forrest on the data
-##https://www.r-bloggers.com/2018/01/how-to-implement-random-forests-in-r/
 
-#install.packages("randomForest")
-library(randomForest)
+###########################
+##### Training a random forest model to predict a cluster labels #####
+##########################
 
-varimax_df2 = varimax_df[,c(1:25,ncol(varimax_df))]
-head(varimax_df2)
-model0 <- randomForest(cluster ~ . , data = varimax_df2, importance = TRUE)
-model1 <- randomForest(strain ~ . , data = varimax_df2, importance = TRUE)
+varimax_df <- data.frame(readRDS('~/RatLiver/Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds')$rotScores)
+colnames(varimax_df) <- paste0('varPC_', 1:ncol(varimax_df))
+cluster.df <- data.frame(cluster=sCVdata_list$res.0.6@Clusters)
+cluster.df$cluster <- paste0('cluster_', as.character(cluster.df$cluster))
+cluster_list <- levels(as.factor(cluster.df$cluster))
 
-importance(model1)        
-importance(model0)        
-varImpPlot(model1)        
-varImpPlot(model0)        
+RF_models <- list()
+preds <- list()
+cm_list = list()
+
+for(aFeature in cluster_list){
+  
+  varimax_df$feature <- as.factor(ifelse(cluster.df$cluster == aFeature, aFeature, 'other'))
+  ### splitting the train and test data
+  sample = sample.split(varimax_df$feature, SplitRatio = .75)
+  train = subset(varimax_df, sample == TRUE) 
+  test = subset(varimax_df, sample == FALSE)
+  
+  ### training the RF model
+  RF_models[[aFeature]] <- randomForest(feature ~ . , data = train, importance = TRUE)
+  
+  preds[[aFeature]] = predict(RF_models[[aFeature]], newdata=test[,-ncol(test)])
+  ### generating a confusion matrix
+  cm_list[[aFeature]] = table(test[,ncol(test)], preds[[aFeature]])
+  
+}
+
+saveRDS(list(models=RF_models, preds=preds, cm=cm_list ), 'Objects/cluster_pred_RFs.rds')
+result <- readRDS('Objects/cluster_pred_RFs.rds')
+RF_models <- result$models
+preds <- result$preds
+cm_list <- result$cm
+
+
+matchClust=sapply(RF_models, function(a_model){
+  imp.df = data.frame(importance(a_model))        
+  imp.df = imp.df[order(imp.df$MeanDecreaseGini, decreasing = T),]
+  imp.df$factor = rownames(imp.df)
+  colnames(imp.df)[1] = 'cluster'
+  imp.df[1,]
+},simplify = F)
+ 
+
+matchClust.df <- do.call(rbind,matchClust)
+varimax_df$cluster = cluster.df$cluster
+
+
+pdf('Plots/RF_VarimaxmatchCluster_minGini.pdf', width = 10, height = 10)
+for(i in 1:length(RF_models)) { #
+  varImpPlot(RF_models[[i]], main=names(RF_models)[i])   
+  a_var_factor = matchClust.df$factor[i]
+  df = data.frame(Embeddings(your_scRNAseq_data_object, 'umap')[,1:2], 
+                  varimax_df, 
+                  emb=varimax_df[,a_var_factor])
+  df$cluster_num = as.character(sapply(strsplit(df$cluster, '_'), '[[', 2))
+  p1=ggplot(df, aes(UMAP_1,UMAP_2, color=emb))+geom_point()+theme_classic()+ggtitle(a_var_factor)+scale_color_viridis(option = 'inferno',direction = -1)
+  p2=ggplot(df, aes(UMAP_1,UMAP_2, color=cluster_num))+geom_point()+theme_classic()+ggtitle(a_var_factor)+scale_color_manual(values = colorPalatte)
+  p3=ggplot(df, aes(cluster_num,emb, fill=cluster_num))+geom_violin()+theme_classic()+ggtitle(a_var_factor)+scale_fill_manual(values = colorPalatte)
+  p4=ggplot(df, aes(varPC_1 ,emb, color=cluster_num))+geom_point()+theme_classic()+ggtitle(a_var_factor)+scale_color_manual(values = colorPalatte)
+  gridExtra::grid.arrange(p1, p2, p3, p4, nrow=2, ncol=2)
+  }
+dev.off()
+
+
+
 
 

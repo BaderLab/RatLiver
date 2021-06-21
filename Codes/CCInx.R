@@ -140,3 +140,157 @@ for (i in 1:length(cell_types_interest)){
 }
 
 dev.off()
+
+
+######################################################
+####### evaluating ccx based on varimax factors - set-1 map 
+####### we would like to evaluate whether Mac<->LSECs interactions are more enriched in one strain
+##### varimax-4 represents cluster-3, annotated as central venous LSECs+portal endothelial cells 
+##### -(varimax-7) represent cluster 7, 14, annotated as activated LSECs/Hep stellate cells
+##### varimax-15 positive scores represent LEW-enriched genes and neg values represent DA-enriched
+
+
+### importing the data and converting rat gene-names to mouse orthologs
+varimax_res <- readRDS('~/RatLiver/Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds')
+rat_to_mouse_genes <- readRDS('~/XSpecies/rat_to_mouse_genes.rds')
+mouse_ortho_genes <- rat_to_mouse_genes$mmusculus_homolog_associated_gene_name[match(rownames(varimax_res$rotLoadings),
+                                                                                     rat_to_mouse_genes$symbol)]
+to_be_removed <- is.na(mouse_ortho_genes) | mouse_ortho_genes==''
+sum(to_be_removed) ## 1522 genes removed
+
+varimax_load <- data.frame(sapply(1:ncol(varimax_res$rotLoadings),
+                       function(i) varimax_res$rotLoadings[,i]))
+colnames(varimax_load) <- paste0('var', colnames(varimax_res$rotLoadings))
+
+varimax_load <- varimax_load[!to_be_removed,]
+row.names(varimax_load) <- make.unique(mouse_ortho_genes[!to_be_removed])
+#row.names(varimax_load) <- str_replace(rownames(varimax_load), '_', '-')
+
+#### adding the reversed directions of varimax-pc 7 and 15
+varimax_load$varPC_15Rev <- -(varimax_load$varPC_15)
+varimax_load$varPC_7Rev <- -(varimax_load$varPC_7)
+varimax_load$varPC_5Rev <- -(varimax_load$varPC_5)
+
+#### varimax factors to look into
+
+#### Macrophage_PCs
+group1 = data.frame(rbind(c('varPC_6', 'cluster-9', 'Inf-Mac'), 
+              c('varPC_1', 'cluster-10', 'nonInf-Mac'), 
+              c('varPC_21', 'cluster-5', 'nonInf-Mac'),
+              ## strain-specific Mac PCs
+              c('varPC_15', 'cluster-5,14,10', 'LEW-nonInf-Mac'), 
+              c('varPC_15Rev', 'cluster-5,14,10', 'DA-nonInf-Mac')))
+
+
+
+
+#### T/NK cells
+group2 = data.frame(rbind(c('varPC_10', 'cluster-13', 'T-NK-cells'),
+              #### LSECs PCs
+              c('varPC_4', 'cluster-3', 'cv-LSECs'), 
+              c('varPC_7Rev', 'cluster-7,14', 'LSECs')))
+
+
+colnames(group1) = c('varPC', 'cluster', 'cell-type')
+colnames(group2) = c('varPC', 'cluster', 'cell-type')
+
+group1$group = 'group1'
+group2$group = 'group2'
+group = rbind(group1, group2)
+group$names = paste0(group$varPC,sep = ' ; ', group$cluster,sep = ' ; ', group$`cell-type` )
+
+### all cells in a strain
+group3 = list(c('varPC-5', 'all-clusters', 'LEW-all'),
+              c('varPC-5Rev', 'all-clusters', 'DA-all'))
+
+
+factors_list <- c(group1$varPC, group2$varPC)
+
+#### generating a list of dataframes similar to DE list from the varimax factors 
+varimax_load.list <- sapply(1:ncol(varimax_load),
+                       function(i) data.frame(logFC=varimax_load[,i], 
+                                              padj=0.01, 
+                                              row.names = rownames(varimax_load)), 
+                       simplify = F)
+
+names(varimax_load.list) <- colnames(varimax_load)
+
+varimax_load.list <- varimax_load.list[names(varimax_load.list) %in% factors_list]
+names(varimax_load.list) <- sapply(names(varimax_load.list), function(a_name) group$names[group$varPC == a_name])
+names(varimax_load.list) <- str_replace(names(varimax_load.list), '_', '')
+group$names <- str_replace(group$names, '_', '')
+
+inx <- BuildCCInx(GeneStatList=varimax_load.list,
+                  GeneMagnitude="logFC",
+                  Species="mmusculus")
+
+par(mfrow=c(3,3))
+for(i in 1:(length(varimax_load.list))){
+  load.mat <- varimax_load.list[[i]]
+  hist(load.mat$logFC,breaks = seq(-0.3, 0.3, 0.02), main=names(varimax_load.list)[i], 
+       col=brewer.pal(n = 8, name = "Set1")[i], #RdBu
+       xlab='varimax-score')
+}
+
+sapply(1:length(varimax_load.list), 
+       function(i){
+         load.mat <- varimax_load.list[[i]]
+         sum(load.mat>0.07)
+         })
+
+
+
+is.group1 = group$group == 'group1'
+is.group2 = group$group == 'group2'
+
+pdf('Plots/set1map_CCInx_varimaxBased_2.pdf',height = 10, width=25)
+
+for(i in 1:sum(is.group1)){
+  for(j in 1:sum(is.group2)){
+    
+    par(mfrow=c(1,2))
+    PlotCCInx(INX=inx,
+              cellTypeA=group$names[is.group1][i],
+              cellTypeB=group$names[is.group2][j],
+              proteinTypeA="Ligand",
+              proteinTypeB="Receptor",
+              TopEdges=60)
+    
+    PlotCCInx(INX=inx,
+              cellTypeA=group$names[is.group2][j],
+              cellTypeB=group$names[is.group1][i],
+              proteinTypeA="Ligand",
+              proteinTypeB="Receptor",
+              TopEdges=60)
+  }
+}
+dev.off()
+
+
+
+
+pdf('Plots/set2map_CCIInx_strainComparison.pdf',height = 20, width=25)
+for (i in 1:length(cell_types_interest)){
+  for (j in i:length(cell_types_interest)){
+    par(mfrow=c(1,2))
+    cellTypeA = cell_types_interest[i]
+    cellTypeB = cell_types_interest[j]
+    
+    PlotCCInx(INX=inx_DA,
+              cellTypeA=cellTypeA,
+              cellTypeB=cellTypeB,
+              proteinTypeA="Ligand",
+              proteinTypeB="Receptor",
+              GeneMagnitudeThreshold=1)
+    
+    PlotCCInx(INX=inx_LEW,
+              cellTypeA=cellTypeA,
+              cellTypeB=cellTypeB,
+              proteinTypeA="Ligand",
+              proteinTypeB="Receptor",
+              GeneMagnitudeThreshold=1)
+    
+  }
+}
+
+dev.off()

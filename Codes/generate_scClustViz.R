@@ -121,6 +121,9 @@ new_data_scCLustViz_object_endothelial <- "Results/new_samples/scClustVizObj/for
 new_data_scCLustViz_object <- "Results/new_samples/for_scClustViz.RData"
 old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_old_samples_highRes.RData"
 
+
+
+
 #save(your_scRNAseq_data_object,sCVdata_list,
 #      file=new_data_scCLustViz_object_Immune) ## new data scClustViz object
 
@@ -137,9 +140,18 @@ load(old_data_scClustViz_object)
 load(new_data_scCLustViz_object_Immune)
 load(new_data_scCLustViz_object_endothelial)
 
+
+#### generating count table ####
+df = data.frame(table(sCVdata_list$RNA_snn_res.1@Clusters))
+df$Var1 = paste0('cluster_', as.character(df$Var1))
+colnames(df) = c('set2-endothelial', '#cells')
+gridExtra::grid.table(df)
+####################
+
+
 runShiny(
   ## write the path to the file bellow:
-  filePath= old_data_scClustViz_object,
+  filePath= new_data_scCLustViz_object_Immune,
   
   outPath="./",
   # Save any further analysis performed in the app to the

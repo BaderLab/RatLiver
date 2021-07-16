@@ -5,17 +5,23 @@ source('Codes/Functions.R')
 ###### loading the required libraries #######
 library(randomForest)
 require(caTools)
+library(caret) 
+
 
 ####### loading the data #######
 old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
 load(old_data_scClustViz_object)
 
+new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved.RData"
+load(new_data_scCLustViz_object)
 
 ###########################
 ##### Training a random forest model to predict the strain labels #####
 ##########################
 
 varimax_df <- data.frame(readRDS('~/RatLiver/Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds')$rotScores)
+varimax_df <- data.frame(readRDS('~/RatLiver/Results/new_samples/varimax_rotated_object_new.rds')$rotScores)
+
 colnames(varimax_df) <- paste0('varPC_', 1:ncol(varimax_df))
 varimax_df$strain <-as.factor(sapply(strsplit(x = rownames(varimax_df), '_'), '[[', 2))
 table(varimax_df$strain)
@@ -27,19 +33,20 @@ test = subset(varimax_df, sample == FALSE)
 
 ### training the RF model
 strain_pred_RF <- randomForest(strain ~ . , data = train, importance = TRUE)
-# saveRDS(strain_pred_RF, 'Objects/strain_pred_RF.rds')
-strain_pred_RF <- readRDS('Objects/strain_pred_RF.rds')
+
+saveRDS(strain_pred_RF, 'Objects/strain_pred_RF_set2.rds')
+#strain_pred_RF <- readRDS('Objects/strain_pred_RF_set1.rds')
 
 pred = predict(strain_pred_RF, newdata=test[,-ncol(test)])
 ### generating a confusion matrix
-cm = table(test[,ncol(test)], pred)
+cm = table(label=test[,ncol(test)], prediction=pred)
 cm
+gridExtra::grid.table(cm)
 #### evaluating feature importance 
 imp.df = data.frame(importance(strain_pred_RF))        
 imp.df[order(imp.df$MeanDecreaseAccuracy, decreasing = T),]
-varImpPlot(strain_pred_RF)   
-
-
+dev.off()
+varImpPlot(strain_pred_RF,main = 'Strain Prediction Based on Varimax-PCs')   
 
 
 
@@ -48,6 +55,8 @@ varImpPlot(strain_pred_RF)
 ##########################
 
 varimax_df <- data.frame(readRDS('~/RatLiver/Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds')$rotScores)
+varimax_df <- data.frame(readRDS('~/RatLiver/Results/new_samples/varimax_rotated_object_new.rds')$rotScores)
+
 colnames(varimax_df) <- paste0('varPC_', 1:ncol(varimax_df))
 cluster.df <- data.frame(cluster=sCVdata_list$res.0.6@Clusters)
 cluster.df$cluster <- paste0('cluster_', as.character(cluster.df$cluster))
@@ -74,11 +83,26 @@ for(aFeature in cluster_list){
   
 }
 
-saveRDS(list(models=RF_models, preds=preds, cm=cm_list ), 'Objects/cluster_pred_RFs.rds')
-result <- readRDS('Objects/cluster_pred_RFs.rds')
+saveRDS(list(models=RF_models, preds=preds, cm=cm_list ), 'Objects/cluster_pred_RFs_set2.rds')
+#saveRDS(list(models=RF_models, preds=preds, cm=cm_list ), 'Objects/cluster_pred_RFs_set1.rds')
+#result <- readRDS('Objects/cluster_pred_RFs_set1.rds')
+result <- readRDS('Objects/cluster_pred_RFs_set2.rds')
 RF_models <- result$models
 preds <- result$preds
 cm_list <- result$cm
+
+#### generating a table from the scores 
+accuracy_l <- lapply(cm_list, function(x) {x = confusionMatrix(x);x$overall})
+accuracy.df <- data.frame(do.call(cbind,accuracy_l))
+
+byClassScores_l <- lapply(cm_list, function(x) {x = confusionMatrix(x);x$byClass})
+byClassScores.df <- data.frame(do.call(cbind,byClassScores_l))
+
+RFclusterEval.df <- rbind(accuracy.df, byClassScores.df)
+head(RFclusterEval.df)
+
+#write.csv(RFclusterEval.df, 'Results/old_samples/RFclusterEval_df_set1.csv')
+write.csv(RFclusterEval.df, '~/RatLiver/Results/new_samples/RFclusterEval_df_set2.csv')
 
 
 matchClust=sapply(RF_models, function(a_model){
@@ -94,7 +118,7 @@ matchClust.df <- do.call(rbind,matchClust)
 varimax_df$cluster = cluster.df$cluster
 
 
-pdf('Plots/RF_VarimaxmatchCluster_minGini.pdf', width = 10, height = 10)
+pdf('Plots/RF_VarimaxmatchCluster_minGini_set2.pdf', width = 10, height = 10)
 for(i in 1:length(RF_models)) { #
   varImpPlot(RF_models[[i]], main=names(RF_models)[i])   
   a_var_factor = matchClust.df$factor[i]

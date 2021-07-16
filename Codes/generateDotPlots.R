@@ -1,5 +1,6 @@
 source('Codes/Functions.R')
 Initialize()
+#merged_samples <- readRDS('~/RatLiver/Objects/merged_samples_newSamples.rds')
 merged_samples <- readRDS('~/RatLiver/Objects/merged_samples_newSamples.rds')
 subset(pbmc, downsample = 100)
 merged_samples <-FindVariableFeatures(merged_samples)
@@ -107,7 +108,18 @@ features[grep(pattern = 'Rp', x = features)]
 ## based on the initial assumptions on the subcluster identity >> check the expression of a set of above markers using dotplots
 ## VAF project >> load the matrix and check the distribution
 
+new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub.RData"
+load(new_data_scCLustViz_object_Immune)
+sCVdata_list$RNA_snn_res.1@Clusters
+merged_samples <- your_scRNAseq_data_object
 
+mac_markers <- read.csv('~/RatLiver/Results/new_samples/Mac_markers.csv')
+table(mac_markers$Annotation)
+mac_markers$Marker[!mac_markers$Marker %in% rownames(merged_samples)]
+# "Timd4"   "RT1-DMa" "H2-Aa"   "H2-Ab1"  "H2-Eb1"  "H2-Eb2"  "Hif-2a" 
 
-
+merged_samples$orig.ident <- as.character(sCVdata_list$RNA_snn_res.1@Clusters)
+Idents(merged_samples) <- merged_samples$orig.ident
+DotPlot(merged_samples, features = mac_markers$Marker[mac_markers$Marker %in% rownames(merged_samples)]) + 
+  RotatedAxis() #+ ggtitle(names(Cluster_markers_sorted)[i])
 

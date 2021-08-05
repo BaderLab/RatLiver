@@ -116,7 +116,6 @@ merged_samples <- your_scRNAseq_data_object
 mac_markers <- read.csv('~/RatLiver/Results/new_samples/Mac_markers.csv')
 table(mac_markers$Annotation)
 mac_markers$Marker[!mac_markers$Marker %in% rownames(merged_samples)]
-# "Timd4"   "RT1-DMa" "H2-Aa"   "H2-Ab1"  "H2-Eb1"  "H2-Eb2"  "Hif-2a" 
 
 merged_samples$orig.ident <- as.character(sCVdata_list$RNA_snn_res.1@Clusters)
 Idents(merged_samples) <- merged_samples$orig.ident

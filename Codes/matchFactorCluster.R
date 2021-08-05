@@ -34,8 +34,8 @@ test = subset(varimax_df, sample == FALSE)
 ### training the RF model
 strain_pred_RF <- randomForest(strain ~ . , data = train, importance = TRUE)
 
-saveRDS(strain_pred_RF, 'Objects/strain_pred_RF_set2.rds')
-#strain_pred_RF <- readRDS('Objects/strain_pred_RF_set1.rds')
+#saveRDS(strain_pred_RF, 'Objects/strain_pred_RF_set2.rds')
+strain_pred_RF <- readRDS('Objects/strain_pred_RF_set1.rds')
 
 pred = predict(strain_pred_RF, newdata=test[,-ncol(test)])
 ### generating a confusion matrix
@@ -85,7 +85,7 @@ for(aFeature in cluster_list){
 
 saveRDS(list(models=RF_models, preds=preds, cm=cm_list ), 'Objects/cluster_pred_RFs_set2.rds')
 #saveRDS(list(models=RF_models, preds=preds, cm=cm_list ), 'Objects/cluster_pred_RFs_set1.rds')
-#result <- readRDS('Objects/cluster_pred_RFs_set1.rds')
+result <- readRDS('Objects/cluster_pred_RFs_set1.rds')
 result <- readRDS('Objects/cluster_pred_RFs_set2.rds')
 RF_models <- result$models
 preds <- result$preds

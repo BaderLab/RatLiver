@@ -26,6 +26,8 @@ merged_samples <- readRDS('Objects/merged_samples_newSamples_MT-removed.rds')
 new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved.RData"
 old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
 load(old_data_scClustViz_object)
+load(new_data_scCLustViz_object)
+merged_samples <- your_scRNAseq_data_object
 
 
 table(merged_samples$sample_name)
@@ -45,7 +47,7 @@ set1_heps <- c("0" , "1", "2", "4", "6", "8", "12", "15", "16")
 
 #### final clusters - new samples: resolution 0.6, 18 clusters
 ### Heps:  0, 1, 2, 3, 5, 9, 14, 15 >> 3, 5 not Heps >> final Hep clusters:  0, 1, 2, 9, 14, 15
-set2_heps <- c('0', '1', '2', '9', '14', '15')
+set2_heps <- c('0', '1', '2', '3', '9', '14', '15')
 
 merged_samples$cluster <- as.character(merged_samples$res.0.6)
 
@@ -77,12 +79,10 @@ colnames(cluster_average_exp_df) = paste0('cluster_',names(cluster_average_exp))
 head(cluster_average_exp_df)
 
 ### QC-refined old samples (unified QC and MT removed)
-old_sample_Hep_clusters <- cluster_names_types[!cluster_names_types %in% c('13', '9', '5', '7', '14', '3')] 
-clusters_to_check <- paste0('cluster_',old_sample_Hep_clusters)
+clusters_to_check <- paste0('cluster_',set1_heps)
 
 ### MT removed new samples
-new_sample_Hep_clusters <-  as.character(c(0, 1, 2, 3, 5, 9, 14, 15))
-clusters_to_check <- paste0('cluster_',new_sample_Hep_clusters)
+clusters_to_check <- paste0('cluster_',set2_heps)
 
 ## scale and center all the genes in the matrix
 Hep_cluster_average_exp <- get_scaled_by_gene(cluster_average_exp_df[,colnames(cluster_average_exp_df) %in% clusters_to_check]) ## scaling over the clusters of interest
@@ -187,9 +187,12 @@ merged_hepExp_mouseLayer_num.m <- melt(merged_hepExp_mouseLayer_num)
 
 
 #### visualizing the results
-pdf('Plots/HalpernCor_newData_25Clusters.pdf')
+#pdf('Plots/HalpernCor_newData_25Clusters.pdf')
 p0=ggplot2::ggplot(merged_hepExp_mouseLayer_num.m, aes(x=variable, y=value, color=variable))+geom_boxplot()+theme_classic()
 print(p0)
+
+saveRDS(merged_hepExp_mouseLayer_num, 'Results/old_samples/set1_hepExp_mouseLayer.rds')
+
 ### calculating correlations
 hepExp_mouseLayer_rcorr <- rcorr(as.matrix(merged_hepExp_mouseLayer_num), type="pearson")
 #halpern_cor_mat <- cor(merged_hepExp_mouseLayer_num)
@@ -201,11 +204,20 @@ halpern_cor_mat_pVal.sub <- halpern_cor_mat_pVal[colnames(halpern_cor_mat_pVal) 
                                                  colnames(halpern_cor_mat_pVal) %in% paste0('Layer.',1:9)]
 fdr_mat <- round(halpern_cor_mat_pVal.sub, 5)
 fdr_mat_char <- ifelse(fdr_mat<0.001, '***', ifelse(fdr_mat<0.01, '**',ifelse(fdr_mat<0.05,'*','') ))
-pheatmap::pheatmap(halpern_cor_mat.sub, cluster_cols = F, 
-                      display_numbers = fdr_mat_char ,
+halpern_cor_mat.sub.t = t(halpern_cor_mat.sub)
+colnames(halpern_cor_mat.sub.t) = gsub('er_', ' ', colnames(halpern_cor_mat.sub.t) )
+rownames(halpern_cor_mat.sub.t) = gsub('Layer.', 'L', rownames(halpern_cor_mat.sub.t))
+pheatmap::pheatmap(halpern_cor_mat.sub.t, cluster_rows = F, 
+                      display_numbers = t(fdr_mat_char) ,
                       #color = plasma(100),
-                      fontsize_row = 19,fontsize_col = 19,fontsize_number = 27,main='Set-2'
-                      ) #inferno(20)
+                      fontsize_row = 15,fontsize_col = 15,fontsize_number = 22,main='',
+                      color=colorRampPalette(c("blue3", "white", "violetred2"))(50)) #inferno(20)
+
+
+pheatmap(t(df_cor_sub), fontsize =10,fontsize_row=12,fontsize_col=12, main=main, 
+         color = colorRampPalette(c("blue3", "white", "red"))(50), )
+
+
 
 dev.off()
 

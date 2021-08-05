@@ -27,7 +27,7 @@ Initialize()
 MIT_CUT_OFF = 40
 LIB_SIZE_CUT_OFF = 2000
 NUM_GENES_DETECTED = 250
-INPUT_NAME = 'rat_Lew_02'# 'rat_DA_M_10WK_003' # 'rat_DA_01_reseq' #'rat_Lew_02' 
+INPUT_NAME = 'rat_DA_01_reseq'# 'rat_DA_M_10WK_003' # 'rat_DA_01_reseq' #'rat_Lew_02' 
 
 if(INPUT_NAME == 'rat_DA_01_reseq') {LIB_SIZE_CUT_OFF=1500; MIT_CUT_OFF=30}
 if(INPUT_NAME == 'rat_DA_M_10WK_003') {LIB_SIZE_CUT_OFF=2000; MIT_CUT_OFF=20}
@@ -123,6 +123,14 @@ ggplot(df, aes(x=library_size, y=mito_perc, color=n_expressed))+geom_point()+sca
   geom_hline(yintercept= MIT_CUT_OFF, linetype="dashed", color = "red")+labs(caption = INPUT_NAME)+
   geom_vline(xintercept = LIB_SIZE_CUT_OFF, linetype="dashed", color = "red3", size=0.5)+
   ggtitle(paste0('mito threshold: ', MIT_CUT_OFF,' , library size threshold: ', LIB_SIZE_CUT_OFF, ' (before filter)'))
+
+
+ggplot(df, aes(x=library_size, y=mito_perc, color=n_expressed))+geom_point(size=,alpha=0.7)+scale_color_viridis()+
+  theme_classic()+xlab('Library size')+ylab('Mitochondrial transcript percent')+
+  geom_hline(yintercept= MIT_CUT_OFF, linetype="dashed", color = "red")+labs(caption = INPUT_NAME)+
+  geom_vline(xintercept = LIB_SIZE_CUT_OFF, linetype="dashed", color = "red3", size=0.5)+
+  ggtitle('Library size and mitochondrial transcript cutoffs')
+
 
 
 ggplot(df, aes(x=n_expressed, y=mito_perc, color=library_size))+geom_point()+scale_color_viridis()+

@@ -4,11 +4,11 @@ Initialize()
 #merged_samples <- readRDS('~/RatLiver/Objects/merged_samples_newSamples.rds')
 merged_samples <- readRDS('Objects/merged_samples_newSamples_MT-removed.rds')
 
-cell_types <- 'endothelial cells' #'Immune cells'
+cell_types <- 'Immune cells'#'endothelial cells' #
 ### visualize the selected population
 endothelial_clusters <- c(4, 6, 16)
-Immune_clusters <- c(7, 8, 10, 11, 12, 13)
-cluster_name = as.character(endothelial_clusters) #Immune_clusters
+Immune_clusters <- c(7, 8, 10, 11, 12, 13, 17)
+cluster_name = as.character(Immune_clusters) #Immune_clusters
 merged_samples$final_cluster = as.character(merged_samples$res.0.6)
 umap_df <- data.frame(Embeddings(merged_samples, 'umap'))
 umap_df$clusters = merged_samples$final_cluster
@@ -47,7 +47,7 @@ seur <- SetAssayData(
 colnames(seur@meta.data)
 seur@meta.data <- seur@meta.data[,colnames(seur@meta.data) %in% c("orig.ident","nCount_RNA","nFeature_RNA","mito_perc",
                                                                   "nCount_SCT","nFeature_SCT","cell_type","sample_type",
-                                                                  "strain_type", 'sample_name', 'strain')]
+                                                                  "strain_type", 'sample_name', 'strain', 'final_cluster')]
 seur@reductions$pca <- NULL
 seur@reductions$tsne <- NULL
 seur@reductions$umap <- NULL
@@ -56,17 +56,18 @@ seur@reductions$harmony <- NULL
 seur <- SCTransform(seur,conserve.memory=F,verbose=T,
                     return.only.var.genes=F,variable.features.n = nrow(seur))
 
+DefaultAssay(seur) = 'SCT'
 seur <- RunPCA(seur,verbose=T, features=rownames(seur))
 
 ## PCA
 
 plot(100 * seur@reductions$pca@stdev^2 / seur@reductions$pca@misc$total.variance,
      pch=20,xlab="Principal Component",ylab="% variance explained",log="y")
-PC_NUMBER = 15
+PC_NUMBER = 20
 
 ### Harmony
 #seur <- RunHarmony(seur, "sample_type",assay.use="RNA")
-seur <- RunHarmony(seur, "sample_name",assay.use="RNA")
+seur <- RunHarmony(seur, "sample_name",assay.use="SCT")
 seur <- RunUMAP(seur,dims=1:PC_NUMBER, reduction="harmony")
 seur <- RunTSNE(seur,dims=1:PC_NUMBER, reduction="harmony")
 
@@ -143,7 +144,9 @@ while(DE_bw_clust) {
   sCVdata_list[[paste0("res.",seurat_resolution)]] <- curr_sCVdata
 }
 
-
+saveRDS(seur, 'Results/new_samples/Immune_subclusters_c17Included.rds')
+new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub_c17Included.RData"
+save(seur,sCVdata_list,file=new_data_scCLustViz_object_Immune)
 
 # seur@meta.data <- cbind(seur@meta.data, data.frame(lapply(sCVdata_list, function(x) x@Clusters)))
 
@@ -154,8 +157,10 @@ subcluster_df <- data.frame(subclust=sCVdata_list$res.0.6@Clusters,
 
 
 seur_2 <- readRDS('Results/new_samples/Immune_subclusters.rds') ### Immune_ , endothelial_
-seur_umap <- data.frame(getEmb(seur,'umap'), cluster=as.character(seur$RNA_snn_res.1))
-ggplot(seur_umap, aes(UMAP_1, UMAP_2, color=cluster))+geom_point()+theme_classic()
+seur_umap <- data.frame(getEmb(seur,'umap'), cluster=as.character(seur$SCT_snn_res.1))
+seur_umap <- data.frame(getEmb(seur,'umap'), cluster=as.character(seur$final_cluster))
+
+ggplot(seur_umap, aes(UMAP_1, UMAP_2, color=cluster))+geom_point()+theme_classic()+scale_color_manual(values=colorPalatte)
 
 
 

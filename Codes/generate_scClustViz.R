@@ -151,7 +151,7 @@ gridExtra::grid.table(df)
 
 runShiny(
   ## write the path to the file bellow:
-  filePath= new_data_scCLustViz_object_Immune,
+  filePath= new_data_scCLustViz_object,
   
   outPath="./",
   # Save any further analysis performed in the app to the
@@ -167,15 +167,16 @@ runShiny(
 
 '~/RatLiver/Results/new_samples/rotated_loadings/rot_PC5_loadings.rnk'
 '~/RatLiver/Results/new_samples/rotated_loadings_immune/rot_PC6_loadings.rnk'
-
+merged_samples <- your_scRNAseq_data_object
 #### check if removal of mt-genes would help with the annotation
 df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1], 
                       UMAP_2=getEmb(merged_samples, 'umap')[,2], 
-                      clusters=paste0('cluster_', sCVdata_list$res.1@Clusters))
+                      clusters=paste0('', sCVdata_list$res.0.6@Clusters))
 
-title = 'Mt-genes included' # 'Mt-genes removed'
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=clusters))+geom_point()+ggtitle(title)+
-  theme_classic()#+scale_color_manual(values = colorPalatte)
+title = '' # 'Mt-genes removed'
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=clusters))+geom_point(alpha=0.6, size=4.5)+
+  theme_classic()+scale_color_manual(values = colorPalatte)+
+  theme(text = element_text(size=22),legend.title = element_blank())
 
 
 df_tsne <- data.frame(tSNE_1=getEmb(merged_samples, 'tsne')[,1], 

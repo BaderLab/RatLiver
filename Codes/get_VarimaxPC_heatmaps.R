@@ -19,13 +19,20 @@ cl_cb <- function(hcl, mat){
 # merged_samples_norm <- NormalizeData(merged_samples_imputed$estimate)
 ##########################
 
-merged_samples <- readRDS('Results/preproc_rats/merged/merged_rat_samples_2.rds')
-merged_samples_norm <- NormalizeData(merged_samples)
-merged_samples_norm <- ScaleData(merged_samples_norm)
 
+new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved.RData"
+old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
+load(new_data_scCLustViz_object)
+load(old_data_scClustViz_object)
+
+
+merged_samples <- readRDS('Objects/merged_samples_oldSamples_mt40_lib1500_MTremoved.rds')
+merged_samples <- readRDS('Objects/merged_samples_newSamples_MT-removed.rds')
 
 #pdf('plots/heatmap_topLoeadingGenes.pdf')
-rot_data <- readRDS('Results/preproc_rats/merged/rot_data.rds')
+rot_data <- readRDS('Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds') ## MT-removed
+rot_data <- readRDS('Results/new_samples/varimax_rotated_object_new.rds') ## MT-removed
+
 scores <- data.frame(rot_data$rotScores)
 Loadings <- rot_data$rotLoadings
 
@@ -36,7 +43,7 @@ colnames(scores) = paste0('PC_', 1:ncol(scores))
 scores$UMI <- rownames(scores)
 
 ### sort the cells based on their PC embedding > get the indices
-PC_value <- 5 #13
+PC_value <- 15 #13
 num_top_genes <- 30
 num_top_cells <- 55
 
@@ -77,7 +84,8 @@ gene_df_ord <- gene_df[order(gene_df$PC_loading_rank, decreasing = F),]
 gene_df_ord <- gene_df_ord[gene_df_ord$select,]
 
 #### reorder the original data matrix ####
-data <- data.frame(GetAssayData(merged_samples_norm[gene_df_ord$gene, cell_df_ord$umi]))
+data <- data.frame(GetAssayData(merged_samples[gene_df_ord$gene, cell_df_ord$umi]))
+colnames(data) = gsub('\\.', '-', colnames(data))
 ## imputed data:
 #data <- data.frame(merged_samples_norm[gene_df_ord$gene, cell_df_ord$umi])
 getHead(data)
@@ -145,16 +153,15 @@ dev.off()
 
 ###### preparing the annotation data frame  ######
 
-cluster_umi_df <- data.frame(umi=colnames(merged_samples), cluster=merged_samples$merged_clusters)
-cluster_umi_df <- cluster_umi_df[cell_df_ord$umi,]
+cluster_umi_df <- data.frame(umi=colnames(merged_samples), cluster=as.character(merged_samples$res.0.6))
 cluster_umi_df <- cluster_umi_df[match(cell_df_ord$umi,cluster_umi_df$umi),]
 table(cluster_umi_df$cluster)
-rownames(data_G.U.ord) == rownames(cluster_umi_df)
 
 cells_AUC_df <- readRDS('~/cells_AUC_df.rds')
 ### AUCell scores for the imputed data
 #cells_AUC_df <- readRDS("~/XSpecies/Results/preproc_rats/merged/AUCell/PPARG_cells_AUC_df_imputed.rds")
 getHead(cells_AUC_df)
+rownames(cells_AUC_df) = paste0(rownames(cells_AUC_df), '-1')
 
 gene_set_name <- c('PPARG') # HNF4A
 is_a_gene_set <- sapply(str_split(colnames(cells_AUC_df),pattern = '\\.'), function(x) x[1]) %in% gene_set_name
@@ -170,28 +177,37 @@ annotation_df <- data.frame(strain=ifelse(substr(colnames(matrix2Vis),1,10) %in%
 
 row.names(annotation_df) == rownames(cells_AUC_df_sub_ord)
 
-annotation_df <- annotation_df[,c('strain', 'cluster', 'PPARG.20176806.ChIP.Seq.MACROPHAGES.Mouse')]
-colnames(annotation_df)[3] <- 'PPARG.ChIP.Seq.MACROPHAGES.Mouse'
-colnames(annotation_df)[3:8]
+annotation_df <- annotation_df[,c('strain', 'cluster', 'PPARG.20887899.ChIP.Seq.3T3.L1.Mouse')]
+colnames(annotation_df)[3] <- 'PPARG'
+annotation_df$strain = ifelse(annotation_df$strain == 'DA rat', 'DA', 'Lew')
+
+ggplot(annotation_df, aes(y=PPARG, x=strain, fill=strain))+
+  geom_boxplot()+theme_classic()+ggtitle(paste0('PC-', PC_value))
 
 ### checking the distribution of the gene-set's scores in the two strains ####
 pdf(paste0('plots/PC',PC_value,'_aucellScores_boxplot2.pdf'), width = 6, height = 8) #_imputed
-ggplot(annotation_df, aes(y=PPARG.19300518.ChIP.PET.3T3.L1.Mouse, x=strain, fill=strain))+
+ggplot(annotation_df, aes(y=PPARG.19300518.ChIP.PET.3T3.L1.Mouse, x=strain, fill=strain))+ ##
   geom_boxplot()+theme_classic()+ggtitle(paste0('PC-', PC_value))
 ggplot(annotation_df, aes(y=PPARG.20176806.ChIP.Seq.THIOMACROPHAGE.Mouse, x=strain, fill=strain))+
   geom_boxplot()+theme_classic()+ggtitle(paste0('PC-', PC_value))
-ggplot(annotation_df, aes(y=PPARG.23326641.ChIP.Seq.C3H10T1.2.Mouse, x=strain, fill=strain))+
+ggplot(annotation_df, aes(y=PPARG.23326641.ChIP.Seq.C3H10T1.2.Mouse, x=strain, fill=strain))+ ##
   geom_boxplot()+theme_classic()+ggtitle(paste0('PC-', PC_value))
 ggplot(annotation_df, aes(y=PPARG.20176806.ChIP.Seq.3T3.L1.Mouse, x=strain, fill=strain))+
   geom_boxplot()+theme_classic()+ggtitle(paste0('PC-', PC_value))
 ggplot(annotation_df, aes(y=PPARG.20176806.ChIP.Seq.MACROPHAGES.Mouse, x=strain, fill=strain))+
   geom_boxplot()+theme_classic()+ggtitle(paste0('PC-', PC_value))
-ggplot(annotation_df, aes(y=PPARG.20887899.ChIP.Seq.3T3.L1.Mouse, x=strain, fill=strain))+
+ggplot(annotation_df, aes(y=PPARG.20887899.ChIP.Seq.3T3.L1.Mouse, x=strain, fill=strain))+ ##
   geom_boxplot()+theme_classic()+ggtitle(paste0('PC-', PC_value))
 dev.off()
 
 
-
+#annotation_df = annotation_df[,c("strain", "PPARG", )]
+# Specify colors
+ann_colors = list(
+  strain = c(DA="#CC79A7", Lew="#0072B2")
+  #cluster = colorPalatte[1:14]
+  #GeneClass = c(Path1 = "#7570B3", Path2 = "#E7298A", Path3 = "#66A61E")
+)
 row_font_size = 11
 pdf(paste0('plots/PC',PC_value,'_pheatmaps_cellScore2_selectedGenes.pdf'), width = 20, height = 13) # width = 10 height = 12
 pheatmap::pheatmap(matrix2Vis, kmeans_k=NA, cluster_rows=F, 
@@ -212,6 +228,7 @@ pheatmap::pheatmap(matrix2Vis, kmeans_k=NA, cluster_rows=T,
                    cluster_cols=T, show_rownames = T, show_colnames =F,
                    fontsize_row = row_font_size, fontsize_col = 8,
                    annotation_col = annotation_df,
+                   annotation_colors = ann_colors,
                    clustering_callback = cl_cb)
 dev.off()
 

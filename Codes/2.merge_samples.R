@@ -186,6 +186,7 @@ dim(loading_matrix)
 rot_data <- readRDS('Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds') ## MT-removed
 rot_data <- readRDS('Results/new_samples/varimax_rotated_object_new.rds') ## MT-removed
 
+rot_data <- readRDS('Results/new_samples/immune_varimax_results.rds') ## MT-removed
 
 rot_data <- get_varimax_rotated(gene_exp_matrix, loading_matrix)
 rotatedLoadings <- rot_data$rotLoadings

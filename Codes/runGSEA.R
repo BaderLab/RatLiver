@@ -65,9 +65,9 @@ rnk_file_path = '~/RatLiver/Results/old_samples/rotated_loadings/'
 #### selecting the subset of the files to run gsva on ####
 
 #pc_indices <- c(5, 2, 15, 16, 3, 25, 20, 24, 11, 6, 4, 10, 8, 14, 9, 29, 12, 7)
-map = 'set_1' #'set_2'
+map = 'set_2' #'set_2'
 pc_indices <- c(9, 17, 29) #set1
-if(map=='set_2') pc_indices <- c(9, 13) # set-2, last 3 need to be made
+if(map=='set_2') pc_indices <- c(1, 29) # set-2, last 3 need to be made
 
 
 rnk_files_to_include <- list.files(rnk_file_path,pattern = '*.rnk' ,full.names = F) %in% 

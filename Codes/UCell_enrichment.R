@@ -139,14 +139,16 @@ gridExtra::grid.arrange(p1,p2,p4,nrow=1,ncol=3)
 
 
 
-a_gene_set_name <- 'STAT4' # 'HNF4A' # GATA1
+a_gene_set_name <- 'HNF4A' # 'HNF4A' # GATA1
 query_genesets = names(geneSets)[grepl(pattern = a_gene_set_name, names(geneSets),ignore.case = T)]
 
-scores_2 <- data.frame(ScoreSignatures_UCell(my.matrix_sub, features= geneSets[names(geneSets) %in% query_genesets]))
+scores_2 <- data.frame(ScoreSignatures_UCell(my.matrix_sub, 
+                                             features= geneSets[names(geneSets) %in% query_genesets]))
 colnames(scores_2) <- sapply(strsplit(colnames(scores_2),'\\.'),function(x) paste(x[1],x[5],x[7],sep = '_'))
 
 scores_2$strain = sapply(strsplit(high_score_cells,'_'), function(x) x[2])
 head(scores_2)
 
-ggplot(scores_2, aes(y=STAT4_TH1_Mouse_UCell, x=strain))+geom_boxplot(aes(fill=strain))+scale_fill_brewer(palette = 'Dark2')+stat_compare_means()
+ggplot(scores_2, aes(y=STAT4_TH1_Mouse_UCell, x=strain))+geom_boxplot(aes(fill=strain))+
+  scale_fill_brewer(palette = 'Dark2')+stat_compare_means()
 

@@ -6,10 +6,11 @@ library(stats)
 library(ggpubr)
 
 ############
-new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved.RData"
+new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_labelCor.RData"
 old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
 
-new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub.RData"
+#new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub.RData"
+new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub_c17Included_labelCor.RData"
 new_data_scCLustViz_object_endothelial <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_EndothelialSub.RData"
 
 #########
@@ -19,11 +20,13 @@ load(old_data_scClustViz_object)
 load(new_data_scCLustViz_object_Immune)
 load(new_data_scCLustViz_object_endothelial)
 
-
+#### the new immune subcluster data ####
 merged_samples <- your_scRNAseq_data_object
 merged_samples$cluster = as.character(sCVdata_list$res.0.6@Clusters)
 merged_samples$cluster = as.character(sCVdata_list$RNA_snn_res.1@Clusters)
-merged_samples$sample_name = sapply(str_split(merged_samples$orig.ident, '_'), '[[', 2)
+merged_samples$cluster = as.character(sCVdata_list$res.1@Clusters)
+
+merged_samples$sample_name = sapply(str_split(colnames(merged_samples), '_'), '[[', 2)
 merged_samples$sample_name = ifelse(merged_samples$orig.ident=='rat_DA_01_reseq', 'DA-1', 
                                     ifelse(merged_samples$orig.ident=='rat_DA_M_10WK_003', 'DA-2',
                                            ifelse(merged_samples$orig.ident=='rat_Lew_01', 'Lew-1', 'Lew-2')))
@@ -42,17 +45,20 @@ df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1],
 #### check if removal of mt-genes would help with the annotation
 df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1], 
                       UMAP_2=getEmb(merged_samples, 'umap')[,2], 
-                      clusters=paste0('', sCVdata_list$res.0.6@Clusters),
-                      #subclusters=merged_samples$cluster,
+                      #clusters=paste0('', sCVdata_list$res.0.6@Clusters),
+                      clusters=merged_samples$cluster,
                       sample=merged_samples$sample_name,
                       strain=merged_samples$strain,
                       Ptprc=GetAssayData(merged_samples)['Ptprc',], 
                       umi=colnames(merged_samples))
 
+df_umap$Cd14 <-  GetAssayData(merged_samples)['Cd14',]
 ##### adding the final annotations to the dataframe
+set1_info <- read.csv('figure_panel/set-1-final-info.csv')
 set1_info <- read.csv('figure_panel/set-2-final-info.csv')
+set1_info <- read.csv('figure_panel/set-2-immunesub-final-info.csv')
 colnames(set1_info)[1] = 'clusters'
-set1_info <- set1_info[1:18,]
+set1_info <- set1_info[1:14,]
 set1_info$clusters = as.character(set1_info$clusters)
 df_umap = merge(df_umap, set1_info[,1:3], by.x='clusters', by.y='clusters', all.x=T,order=F)
 #### re-ordering the rows based on UMIs of the initial data
@@ -62,33 +68,62 @@ df_umap$umi == colnames(merged_samples)
 
 library(RColorBrewer)
 # Define the number of colors you want
-nb.cols <- 18
+nb.cols <- length(names(table(merged_samples$cluster))) #18 #14
 mycolors <- colorRampPalette(brewer.pal(8, "Set1"))(nb.cols)
 
 title = '' # 'Mt-genes removed'
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=clusters))+geom_point(alpha=0.8, size=1.5)+
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=clusters))+geom_point(alpha=0.8, size=1)+
   theme_classic()+scale_color_manual(name='clusters',values = mycolors)+
   theme(text = element_text(size=15),legend.title = element_blank())#
 
 title = '' # 'Mt-genes removed'
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=label))+geom_point(alpha=0.8, size=3)+
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=label))+geom_point(alpha=0.8, size=0.9)+
   theme_classic()+scale_color_manual(name='clusters',values = mycolors)+
+  theme(text = element_text(size=22),legend.title = element_blank())#
+
+
+df_umap$label_hep <- ifelse(substr(df_umap$label, 1, 3)=='Hep', df_umap$label, 'Other')
+df_umap$label_lsec <- ifelse(substr(df_umap$label, 1, 4)=='LSEC', df_umap$label, 'Other')
+df_umap$label_stellate <- ifelse(substr(df_umap$label, 1, 8)=='Stellate', df_umap$label, 'Other')
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=label_stellate))+geom_point(alpha=0.8, size=3)+
+  theme_classic()+scale_color_manual(name='clusters',values = c('grey86',mycolors[16], mycolors[17]))+
   theme(text = element_text(size=15),legend.title = element_blank())#
+
+
 
 nb.cols <- 4
 mycolors <- colorRampPalette(brewer.pal(8, "Pastel1"))(nb.cols) #Pastel1
 
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=sample))+geom_point(alpha=0.8, size=4)+
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=sample))+geom_point(alpha=0.35, size=0.7)+
   theme_classic()+
   #scale_color_manual(values = c("#E69F00", "#009E73"))+
-  #scale_color_manual(values = c("pink1", "skyblue1"))+
+  scale_color_manual(values = c("pink1", "skyblue1"))+
   #scale_color_brewer(palette = "Set3")+
-  scale_color_manual(values=mycolors)+
-  theme(text = element_text(size=20),legend.title = element_blank())
+  #scale_color_manual(values=mycolors)+
+  theme(text = element_text(size=19),legend.title = element_blank())
 
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=Ptprc))+geom_point(alpha=0.4,size=1.5)+
-  scale_color_viridis(direction = -1)+theme_classic()+
-  theme(text = element_text(size=20))
+##### Marker expression over UMAP
+
+Stellate_markers = c('Calcrl', 'Ecm1', 'Igfbp7', 'Rbp1', 'Co3a1', 'Bgn', 
+                     'Igfbp3',"Colec11", "Colec10", "Colec12")
+
+Hep_markers = c('Cyp7a1', 'Oat', 'Scd', 'Axin2', 'Glul', 'Hal', 'Orm1')
+
+pdf('Plots/Set1-stellateMarkers.pdf', height = 7, width = 8)
+pdf('Plots/Set1-HepMarkers.pdf', height = 7, width = 8)
+
+for(i in 1:length(Hep_markers)){
+  marker_name = Hep_markers[i] # Cd11b/Itgam not included
+  if(!marker_name %in% rownames(merged_samples)) next
+  df_umap$marker=GetAssayData(merged_samples)[marker_name,]
+  p=ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=marker))+geom_point(alpha=0.4,size=0.6)+
+    scale_color_viridis(direction = -1)+ggtitle(marker_name)+theme_classic()+
+    theme(text = element_text(size=17.5),plot.title = element_text(hjust = 0.5),
+          legend.title = element_blank())
+  print(p)
+}
+dev.off()
+
 
 ##### checking one specific cluster
 a_cluster = as.character(c(7, 8, 10, 11, 12, 17)) 
@@ -147,12 +182,26 @@ xlabel2 = c('Hep (1)', 'Hep (3)', 'Hep (9)', 'Hep (14)', 'Hep (15)', 'Hep (0)', 
                  'LSEC (6)', 'LSEC (4)', 'Stellate (16)', 'Mac & DC (8)', 'Non-Inf Mac (13)', 
                  'Inf Mac(11)', 'NK cell (7)', 'Cd3 T cell (10)', 'Mature B cell (12)', 
                  'B cell (17)', 'Erythroid (5)')
+
+##### set-2 immune-sub labels
+
+immune_sub_labels = levels(counts_norm$cluster)
+immune_sub_labels[immune_sub_labels=='gd T cells / NK-like cell (1)'] = "gd T cells\n/NK-like cell (1)"
+immune_sub_labels[immune_sub_labels=="LSEC & Non-Inf Mac (9)"] = "LSEC &\nNon-Inf Mac (9)"
+immune_sub_labels[immune_sub_labels=="Hep & non-Inf Mac (6)"] = "Hep &\nNon-Inf Mac (6)"
 #### based on sample-type ##### 
 counts <- ddply(df, .(df$sample_type, df$cluster), nrow)
 names(counts) <- c("sample_type", "cluster", "Freq")
-counts$cluster= factor(counts$cluster, levels = as.character(set1_info$label[1:18]) ) 
+counts$cluster= factor(counts$cluster, levels = as.character(set_1_cl_ord) ) 
+counts$cluster= factor(counts$cluster, levels = as.character(set1_info$label[1:14]) ) 
 counts$cluster= factor(counts$cluster, levels = as.character(set_2_cl_ord) ) 
+
 counts$gcellType = gsub('\\(.*', '', as.character(counts$cluster))
+counts$gcellType <- ifelse(counts$cluster %in% c("B cell (3)", "DC & B cell (7)"), "B cell",
+                           ifelse(counts$cluster %in% c("Cd3 T cell (0)","gd T cells / NK-like cell (1)", "gd T cell (12)", "NK-like cell (8)"), 
+                                  "T cells", "Macrophages"))
+
+
 counts$strain=sapply(strsplit(counts$sample_type,'-') ,'[[', 1)
 #write.csv(counts, 'figure_panel/set1-counts.csv')
 
@@ -160,13 +209,13 @@ counts$strain=sapply(strsplit(counts$sample_type,'-') ,'[[', 1)
 ggplot(data=counts, aes(x=cluster, y=Freq, fill=sample_type)) +
   geom_bar(stat="identity",color='black')+theme_classic()+#+scale_fill_brewer(palette = "Blues")+
   ylab('Counts')+xlab('Clusters')+
-  scale_fill_manual(values=mycolors)+
+  #scale_fill_manual(values=mycolors)+
   #scale_fill_manual(values = c("#E69F00", "#009E73"))+
   scale_fill_manual(values = c("pink1", "skyblue1"))+
   theme(text = element_text(size=15),
         axis.text.x = element_text(size=10,angle=90,color='black'),
-        legend.title = element_blank())
-  scale_x_discrete(labels = xlabel)+xlab('')
+        legend.title = element_blank())+
+  scale_x_discrete(labels = xlabel2)+xlab('')
 
 counts_split <- split( counts , f = counts$cluster )
 counts_split_norm <- lapply(counts_split, function(x) {x$Freq=x$Freq/sum(x$Freq);x})
@@ -180,39 +229,53 @@ ggplot(data=counts_norm, aes(x=cluster, y=Freq, fill=sample_type)) +
   scale_fill_manual(values = c("pink1", "skyblue1"))+
   theme(text = element_text(size=15),
         axis.text.x = element_text(size=11,angle=90,color='black'),
-        legend.title = element_blank()) + 
-  scale_x_discrete(labels = xlabel2)+xlab('')
+        legend.title = element_blank()) +  xlab('') +
+  scale_x_discrete(labels = immune_sub_labels) #scales::wrap_format(9)
+ 
 
 
 
 ########### dodge barplots -->>> why can't I add borders????
 #counts2 = data.frame(read.csv('figure_panel/set2-counts.csv'))
 
+gcelltype_df = aggregate(counts$Freq, by=list(gcellType=counts$gcellType), FUN=sum)
+gcelltype_ord = gcelltype_df$gcellType[order(gcelltype_df$x, decreasing = T)]
+counts$gcellType = factor(counts$gcellType, levels = as.character(gcelltype_ord) ) 
+#aggregate(counts$Freq, by=list(gcellType=counts$test), FUN=sum)
+
 ggplot(data=counts, aes(x=gcellType, y=Freq, fill=sample_type)) +
-  geom_bar(stat="identity", position=position_dodge())+
-  theme_classic()+scale_fill_manual(values = c("pink1", "skyblue1"))+
+  geom_bar(stat="identity")+
+  theme_classic()+
+  #scale_fill_manual(values = c("pink1", "skyblue1"))+
+  scale_fill_manual(values=mycolors)+
   theme(text = element_text(size=15),
-        legend.title = element_blank(), axis.text.x = element_text(color='black',size=11, angle=90))+ 
-  #scale_x_discrete(labels = c("Hep","Inf Mac", "LSEC", "NK-like\n&T cells", "Non-Inf\nMac","Stellate"))+
-  scale_x_discrete(labels = c("B cell ","Cd3\nT cell","Erythroid","Hep","Inf Mac", "LSEC",
-                              "Mac\n& DC", "Mature\nB cell","NK cell", "Non-Inf\nMac", "Stellate"))+  
-  xlab('')+ylab('Counts')
+        legend.title = element_blank(), axis.text.x = element_text(color='black',size=12, angle=90))+ 
+  xlab('')+ylab('Counts')+
+  scale_x_discrete(labels = c("Hep","LSEC", "Inf Mac", "Non-Inf\nMac","Stellate", "NK-like\n&T cells"))
+  #scale_x_discrete(labels = c("B cell ","Cd3\nT cell","Erythroid","Hep","Inf Mac", "LSEC",
+  #                            "Mac\n& DC", "Mature\nB cell","NK cell", "Non-Inf\nMac", "Stellate"))  
+  scale_x_discrete(labels = c("Hep","LSEC","Erythroid", "NK cell",  "Mac\n& DC", "Cd3\nT cell",
+                              "Inf Mac","Mature\nB cell","Non-Inf\nMac", "Stellate","B cell"))  
+
+ 
+
+
 
 ############## Dot plots ###############
 ############### Set-1 ########
 merged_samples2 = merged_samples
 
 set1_info_ord = set1_info[match(set_2_cl_ord, set1_info$label),]
-matrix = as.matrix(set1_info_ord[,4:8])
+matrix = as.matrix(set1_info_ord[,4:9])
 markers = c()
 for(i in 1:nrow(set1_info_ord)) markers = c(markers,matrix[i,])
 markers <- markers[markers!='']
 markers = unname(markers)
 div_num = 53 #64
 markers_final = unique(c(markers[1:div_num],'Ptprc', 'Cd68', markers[(div_num+1):length(markers)]))
-
+markers_final = unique(c('Ptprc', 'Cd68',markers))
 Idents(merged_samples2) <- factor(df_umap$label, levels = set_2_cl_ord)
-DotPlot(merged_samples2, features = markers_final) + RotatedAxis()+ xlab('Markers')+ylab('')+theme(axis.text.x = element_text(size=9))
+DotPlot(merged_samples2, features = markers_final) + RotatedAxis()+ xlab('Markers')+ylab('')+theme(axis.text.x = element_text(size=11))
 
 
 
@@ -228,45 +291,60 @@ scores <- data.frame(rot_data$rotScores)
 colnames(scores) = paste0('Varimax_', 1:ncol(scores))
 embedd_df_rotated <- data.frame(scores)
 
-pc_num = 4
+pc_num = 15
 rot_df <- data.frame(Varimax_1=embedd_df_rotated$Varimax_1,
                      emb_val=embedd_df_rotated[,pc_num],
                      cluster=as.character(merged_samples$cluster),
                      Library_size=merged_samples$nCount_RNA,
                      num_expressed_genes=merged_samples$nFeature_RNA,
                      strain=merged_samples$strain,
-                     sample_name = merged_samples$sample_name)
+                     sample_name = merged_samples$sample_name,
+                     label=factor(df_umap$label, levels = as.character(set_1_cl_ord)))
 
 ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=cluster))+geom_point(alpha=0.7,size=4)+
   theme_classic()+ylab(paste0('Varimax ',pc_num))+xlab("Varimax 1")+
-  scale_color_manual(name='Immune\nsubcluster',values = colorPalatte)+theme_classic()+
+  scale_color_manual(name='Immune\nsubcluster',values = mycolors)+theme_classic()+
   theme(text = element_text(size=22))+#, legend.title = element_blank()
   ggtitle(paste0('Set-2 Immune-subclusters over Varimax 1 and ', pc_num))
 
 
 #### boxplots plots for varimax
-ggplot(rot_df, aes(x=cluster, y=emb_val, fill=cluster))+geom_boxplot()+theme_classic()+
-  scale_fill_manual(values = colorPalatte)+theme_classic()+
-  xlab('Immune subcluster')+ylab(paste0('Varimax ', pc_num))+
-  theme(text = element_text(size=22), legend.title = element_blank(), legend.position = "none")+
-  ggtitle(paste0('Varimax ', pc_num, ' scores over set-2 Immune-subclusters'))
+ggplot(rot_df, aes(x=label, y=emb_val, fill=label))+geom_boxplot()+theme_classic()+
+  scale_fill_manual(values = mycolors)+theme_classic()+
+  +ylab(paste0('Varimax ', pc_num))+
+  theme(text = element_text(size=18),
+        axis.text.x = element_text(size=13,angle=90,color='black'),
+        legend.title = element_blank(), legend.position = "none")+
+  scale_x_discrete(labels = xlabel2)+xlab('')
+
+ggplot(rot_df, aes(x=label, y=emb_val, fill=strain))+geom_boxplot()+theme_classic()+
+  scale_fill_manual(values = c("#CC79A7","#0072B2"))+theme_classic()+
+  ylab(paste0('Varimax ', pc_num))+
+  theme(text = element_text(size=18),
+        axis.text.x = element_text(size=13,angle=90,color='black'),
+        legend.title = element_blank(), legend.position = "none")+
+  scale_x_discrete(labels = xlabel2)+xlab('')
 
 
-df_umap$Varimax = rot_df$emb_val
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=Varimax))+geom_point(alpha=0.5,size=4)+
-  scale_color_viridis(direction = -1, option = 'inferno',name=paste0("Varimax ", pc_num))+theme_classic()+
-  theme(text = element_text(size=22))+ggtitle(paste0('Varimax ', pc_num, ' scores over set2\nimmune-subclusters UMAP'))
+
+
+
+df_umap$Varimax = abs(rot_df$emb_val)
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=abs(Varimax)))+geom_point(alpha=0.5,size=1)+
+  scale_color_viridis(direction = -1, option = 'inferno',name=paste0("Varimax-", pc_num))+theme_classic()+
+  theme(text = element_text(size=22), legend.title=element_text(size=17))
+#+ggtitle(paste0('Varimax ', pc_num, ' scores over set2\nimmune-subclusters UMAP'))
 #'plasma', 'inferno', 'magma'
 
 
 
 ###### strain-specific varimax factors
 
-ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=strain))+geom_point(alpha=0.6,size=4.5)+
-  theme_classic()+ylab(paste0('Varimax ',pc_num))+xlab("Varimax 1")+
+ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=strain))+geom_point(alpha=0.5,size=3)+
+  theme_classic()+ylab(paste0('Varimax-',pc_num))+xlab("Varimax-1")+
   scale_color_manual(values = c("#CC79A7","#0072B2"))+theme_classic()+
-  theme(text = element_text(size=22), legend.title = element_blank())+# "#56B4E9"
-  ggtitle(paste0('Distribution of cells based on strain\nover Varimax ', pc_num))
+  theme(text = element_text(size=18), legend.title = element_blank())# "#56B4E9"
+  #+ggtitle(paste0('Distribution of cells based on strain\nover Varimax ', pc_num))
   
 
 
@@ -279,9 +357,9 @@ data_summary <- function(x) {
 
 ggplot(rot_df, aes(x=strain, y=emb_val, fill=strain))+geom_boxplot()+theme_classic()+
   scale_fill_manual(values = c("#CC79A7","#0072B2"))+theme_classic()+
-  xlab('Strain')+ylab(paste0('Varimax ', pc_num))+
-  theme(text = element_text(size=22), legend.title = element_blank())+
-  stat_summary(fun.data=data_summary)+stat_compare_means(label.x = 0.9, label.y = 10, size=6)
+  ylab(paste0('Varimax-', pc_num))+xlab('')+
+  theme(text = element_text(size=17),axis.text.x = element_text(size=18,color='black'), legend.title = element_blank())+
+  stat_summary(fun.data=data_summary)+stat_compare_means(label.x = 0.9, label.y = 3.8, size=5)
 
 ##########################################
 
@@ -373,7 +451,7 @@ strain_pred_RF <- readRDS('Objects/strain_pred_RF_set2.rds')
 
 
 FeatImpDf <- data.frame(strain_pred_RF$importance)
-FeatImpDf$Varimax <-as.character(paste0('var ',1:50))
+FeatImpDf$Varimax <-as.character(paste0('Var ',1:50))
 FeatImpDf$Varimax <- factor(FeatImpDf$Varimax, levels=FeatImpDf$Varimax[order(FeatImpDf$MeanDecreaseGini, decreasing = T)])
 FeatImpDf <- FeatImpDf[1:20,]
 head(FeatImpDf)
@@ -383,8 +461,8 @@ ggplot(FeatImpDf, aes(y=MeanDecreaseGini, x=as.factor(Varimax)))+
   theme(axis.text.x = element_text(color = "grey20", size = 12, angle = 90),
         axis.text.y = element_text(color = "grey20", size = 10),  
         axis.title.x = element_text(color = "grey20", size = 13),
-        axis.title.y = element_text(color = "grey20", size = 13))+xlab('Varimax Factors')+ylab('Mean Decrease Gini Score')+
-  ggtitle('Top-20 feature-importance score of a Random-Forest \n model tranied to predict rat strains (set-1)')
+        axis.title.y = element_text(color = "grey20", size = 13))+xlab('Varimax Factors')+ylab('Feature Impoetance\n(Mean Decrease Gini-Score)')
+  #ggtitle('Top-20 feature-importance score of a Random-Forest \n model tranied to predict rat strains (set-1)')
 
 
 

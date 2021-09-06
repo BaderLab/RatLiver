@@ -20,19 +20,31 @@ get_scaled_by_gene <- function(x){
 }
 
 
+set1_info <- read.csv('figure_panel/set-1-final-info.csv')
+set1_info <- read.csv('figure_panel/set-2-final-info.csv')
+colnames(set1_info)[1] = 'clusters'
+head(set1_info)
+
 ##### preparing the rat dataset #####
 
-new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved.RData"
-#old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
-load(new_data_scCLustViz_object)
+#new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_labelCor.RData"
+old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
+load(old_data_scClustViz_object)
 merged_samples <- your_scRNAseq_data_object
 rownames(merged_samples)[(!rownames(merged_samples) %in% mapper$V2)]
 
 merged_samples$res.0.6 <- as.character(sCVdata_list$res.0.6@Clusters)
 merged_samples$cluster <- as.character(merged_samples$res.0.6)
+
+merged_samples@meta.data$umi = colnames(merged_samples)
+meta.data.label = merge(merged_samples@meta.data, set1_info, by.x='cluster', by.y='clusters')
+meta.data.label <- meta.data.label[match(colnames(merged_samples),meta.data.label$umi),]
+merged_samples@meta.data = meta.data.label
+
 table(merged_samples$orig.ident)
-cluster_names = merged_samples$cluster 
+cluster_names = merged_samples$label 
 cluster_names_types = names(table(cluster_names))
+cluster_names_types = names(table(merged_samples$label))
 
 DefaultAssay(merged_samples) <- 'RNA'
 merged_samples <- FindVariableFeatures(merged_samples)
@@ -58,6 +70,7 @@ lapply(cluster_average_exp, dim)
 ## Concatenate all the clusters together to make a matrix
 cluster_average_exp_df = do.call(cbind,cluster_average_exp)
 colnames(cluster_average_exp_df) = paste0('cluster_',names(cluster_average_exp))
+colnames(cluster_average_exp_df) = names(cluster_average_exp)
 head(cluster_average_exp_df)
 
 

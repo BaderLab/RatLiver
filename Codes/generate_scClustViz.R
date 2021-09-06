@@ -13,8 +13,28 @@ merged_samples <- readRDS('Results/new_samples/Immune_subclusters.rds')
 merged_samples <- readRDS('Results/new_samples/endothelial_subclusters.rds') 
 PC_NUMBER = 15
 
+your_scRNAseq_data_object = seur
+merged_samples = your_scRNAseq_data_object
 assay_data <- GetAssayData(merged_samples, 'data')
 #rownames(assay_data) <- mapper$V2
+
+
+
+###### new sample (set-2) strain markers werer flipped - fixing the bug #####
+merged_samples$strain = sapply(str_split(colnames(merged_samples), '_'), '[[', 2)
+### flipping the sample tag
+merged_samples$strain = ifelse(merged_samples$strain == 'DA', 'LEW', 'DA')
+umi_only = sapply(str_split(colnames(merged_samples), '_'), '[[', 6)
+umi_sample_info = ifelse(merged_samples$strain == "DA", 'rat_DA_M09_WK_008_', 'rat_LEW_M09_WK_009_')
+
+corrected_UMIs = paste0(umi_sample_info, umi_only)
+colnames(assay_data) = corrected_UMIs
+
+#### quality check
+colnames(assay_data) == colnames(merged_samples)
+colnames(assay_data) == corrected_UMIs
+
+
 
 
 ##### removing the mitochondrial genes to eliminate their effect on clustering #####
@@ -24,14 +44,15 @@ merged_samples_original <- merged_samples
 merged_samples <- merged_samples[-mito_genes_index,]
 
 
+merged_samples <- RunPCA(merged_samples, features = rownames(merged_samples))  
+merged_samples <- RunHarmony(merged_samples, "sample_name",assay.use="RNA")
+
 ######## Run this section only for the old data ########
 ### running UMAP and tSNE on the Old merged samples 
 ElbowPlot(merged_samples, 'pca')
 PC_NUMBER = 10
 merged_samples <- RunUMAP(merged_samples, dims=1:PC_NUMBER, reduction="harmony")
 merged_samples <- RunTSNE(merged_samples, dims=1:PC_NUMBER, reduction="harmony")
-
-
 
 ### evaluate if removing mito-genes will change the umap clustering distribution 
 merged_samples <- RunHarmony(merged_samples, "sample_name",assay.use="RNA")
@@ -69,25 +90,48 @@ your_scRNAseq_data_object <- CreateSeuratObject(
   names.delim = "_",
   meta.data = NULL)
 
+######### generating the embedding data frames
+df_pca = Embeddings(merged_samples, 'pca')
+rownames(df_pca) = corrected_UMIs
+
+df_harmony = Embeddings(merged_samples, 'harmony')
+rownames(df_harmony) = corrected_UMIs
+
+df_umap = Embeddings(merged_samples, 'umap')
+rownames(df_umap) = corrected_UMIs
+
+df_tsne = Embeddings(merged_samples, 'tsne')
+rownames(df_tsne) = corrected_UMIs
+
+
 ### adding dimension reduction embeddings
-your_scRNAseq_data_object[["pca"]] <- CreateDimReducObject(embeddings = Embeddings(merged_samples, 'pca'), 
+your_scRNAseq_data_object[["pca"]] <- CreateDimReducObject(embeddings = df_pca, 
                                                            key = "PCA_", 
                                                            assay = DefaultAssay(your_scRNAseq_data_object))
 
-your_scRNAseq_data_object[["harmony"]] <- CreateDimReducObject(embeddings = Embeddings(merged_samples, 'harmony'), 
+your_scRNAseq_data_object[["harmony"]] <- CreateDimReducObject(embeddings = df_harmony, 
                                                                key = "Harmony_", 
                                                                assay = DefaultAssay(your_scRNAseq_data_object))
 
-your_scRNAseq_data_object[["umap"]] <- CreateDimReducObject(embeddings = Embeddings(merged_samples, 'umap'), 
+your_scRNAseq_data_object[["umap"]] <- CreateDimReducObject(embeddings = df_umap, 
                                                             key = "UMAP_", 
                                                             assay = DefaultAssay(your_scRNAseq_data_object))
 
-your_scRNAseq_data_object[["tsne"]] <- CreateDimReducObject(embeddings = Embeddings(merged_samples, 'tsne'), 
+your_scRNAseq_data_object[["tsne"]] <- CreateDimReducObject(embeddings = df_tsne, 
                                                             key = "tSNE_", 
                                                             assay = DefaultAssay(your_scRNAseq_data_object))
 
-merged_samples$orig.ident <- merged_samples$sample_name
-your_scRNAseq_data_object$orig.ident <- merged_samples$sample_name
+
+your_scRNAseq_data_object$strain = merged_samples$strain
+your_scRNAseq_data_object$orig.ident <- merged_samples$strain ## samples_name
+your_scRNAseq_data_object$cluster = as.character(sCVdata_list$RNA_snn_res.1@Clusters)
+
+
+#### new corrected set-2 objects
+#saveRDS(your_scRNAseq_data_object, 'Objects/merged_samples_newSamples_MT-removed_labelCorrect.rds')
+#saveRDS(your_scRNAseq_data_object, 'Results/new_samples/Immune_subclusters_labelCorrect.rds')
+#saveRDS(your_scRNAseq_data_object, 'Results/new_samples/endothelial_subclusters_labelCorrect.rds')
+
 ## creating the meta.data dataframe
 head(merged_samples@meta.data)
 your_cluster_results <- data.frame(merged_samples@meta.data[,c(9:ncol(merged_samples@meta.data))]) # 7
@@ -112,10 +156,11 @@ sCVdata_list <- CalcAllSCV(
 
 '~/RatLiver/'
 #### talk to Sonya about these scClusViz object ####
-new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved.RData"
+new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_labelCor.RData"
 old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
 
-new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub.RData"
+new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub_c17Included_labelCor.RData"
+#_labelCor tag was not added although the labels have been refined:
 new_data_scCLustViz_object_endothelial <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_EndothelialSub.RData"
 
 new_data_scCLustViz_object <- "Results/new_samples/for_scClustViz.RData"
@@ -123,13 +168,15 @@ old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_old_samples_hi
 
 
 
-
-#save(your_scRNAseq_data_object,sCVdata_list,
-#      file=new_data_scCLustViz_object_Immune) ## new data scClustViz object
+for(i in 1:length(sCVdata_list)){
+  names(sCVdata_list[[i]]@Clusters) = corrected_UMIs
+}
+save(your_scRNAseq_data_object,sCVdata_list,
+      file=new_data_scCLustViz_object_endothelial) ## new data scClustViz object
 
 your_scRNAseq_data_object$orig.ident <- merged_samples$orig.ident
 save(your_scRNAseq_data_object,sCVdata_list,
-      file=old_data_scClustViz_object) ## old data scClustViz object
+      file=new_data_scCLustViz_object) ## old data scClustViz object
 
 
 # This file can now be shared so anyone 

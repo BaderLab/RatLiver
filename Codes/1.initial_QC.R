@@ -27,13 +27,19 @@ Initialize()
 MIT_CUT_OFF = 40
 LIB_SIZE_CUT_OFF = 2000
 NUM_GENES_DETECTED = 250
-INPUT_NAME = 'rat_DA_01_reseq'# 'rat_DA_M_10WK_003' # 'rat_DA_01_reseq' #'rat_Lew_02' 
+INPUT_NAME = 'rat_Lew_02'# 'rat_DA_M_10WK_003' # 'rat_DA_01_reseq' #'rat_Lew_02' 
 
 if(INPUT_NAME == 'rat_DA_01_reseq') {LIB_SIZE_CUT_OFF=1500; MIT_CUT_OFF=30}
 if(INPUT_NAME == 'rat_DA_M_10WK_003') {LIB_SIZE_CUT_OFF=2000; MIT_CUT_OFF=20}
 if(INPUT_NAME == 'rat_DA_M09_WK_008_3pr_v3') {LIB_SIZE_CUT_OFF=1000; MIT_CUT_OFF=50}
 if(INPUT_NAME == 'rat_LEW_M09_WK_009_3pr_v3') {LIB_SIZE_CUT_OFF=1500; MIT_CUT_OFF=40}
 
+
+# rat_DA_01_reseq --> 50778
+# rat_DA_M_10WK_003 --> 51232
+# rat_Lew_01 --> 62362
+# rat_Lew_02 --> 61898
+# 50778 + 51232 + 62362 + 61898
 
 #### new syncronized thresholds: 
 MIT_CUT_OFF = 40
@@ -53,6 +59,8 @@ input_from_10x <- paste0("Data/", INPUT_NAME,'/')
 seur_raw <- CreateSeuratObject(counts=Read10X(input_from_10x, gene.column = 2),
                            min.cells=0,min.features=1, 
                            project = "snRNAseq")
+dim(seur_raw)
+rm(list=ls())
 
 seur_genes_df <- read.delim(paste0(input_from_10x,'features.tsv.gz'), header = F)
 seur_raw[['RNA']] <- AddMetaData(seur_raw[['RNA']], seur_genes_df$V2, col.name = 'symbol')

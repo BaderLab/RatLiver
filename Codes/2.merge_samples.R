@@ -27,8 +27,8 @@ check_qc_cor <- function(merged_samples, pca_embedding_df, main){
 ##### Load the new samples' data #####
 sample_name_Lew <- 'rat_LEW_M09_WK_009_3pr_v3'
 sample_name_DA <- 'rat_DA_M09_WK_008_3pr_v3'
-data_file_Lew <- 'Objects/rat_DA_M09_WK_008_3pr_v3/seur_QC_rat_DA_M09_WK_008_3pr_v3_mito_50_lib_1000.rds'
-data_file_DA <- 'Objects/rat_LEW_M09_WK_009_3pr_v3/seur_QC_rat_LEW_M09_WK_009_3pr_v3_mito_50_lib_1000.rds'
+data_file_DA <- 'Objects/rat_DA_M09_WK_008_3pr_v3/seur_QC_rat_DA_M09_WK_008_3pr_v3_mito_50_lib_1000.rds'
+data_file_Lew <- 'Objects/rat_LEW_M09_WK_009_3pr_v3/seur_QC_rat_LEW_M09_WK_009_3pr_v3_mito_50_lib_1000.rds'
 
 sample_Lew <- readRDS(data_file_Lew)
 sample_DA <- readRDS(data_file_DA)
@@ -74,6 +74,11 @@ all_merged_samples <- merge(samples_scTransform[[1]], c(samples_scTransform[[2]]
                             project = "rat_data", 
                             merge.data = TRUE)
 
+all_merged_samples <- merge(samples_scTransform[[1]], samples_scTransform[[2]],
+                            add.cell.ids = names(samples_scTransform), 
+                            project = "rat_data", 
+                            merge.data = TRUE)
+
 ###  selecting the count data for cNMF
 #samples_scTransform <- lapply(samples_list, function(x) CreateSeuratObject(GetAssayData(x, 'counts')))
 # merged_samples <- CreateSeuratObject(GetAssayData(all_merged_samples, 'counts'))
@@ -113,6 +118,7 @@ merged_samples$sample_name <- sample_names
 table(merged_samples@meta.data$sample_name) 
 
 merged_samples$strain = ifelse(merged_samples$sample_name %in% c('rat_DA_01_reseq', 'rat_DA_M_10WK_003', 'rat_DA_M09_WK_008'), 'rat_DA', 'rat_LEW')
+merged_samples$strain = sapply(str_split(colnames(merged_samples), '_'), '[[', 2)
 
 MIT_PATTERN = '^Mt-'
 mito_genes_index <- grep(pattern = MIT_PATTERN, row.names(merged_samples) )
@@ -136,7 +142,7 @@ grep(pattern = MIT_PATTERN, rownames(merged_samples))
 
 ##### Run PCA and Harmony on the data  #####
 merged_samples <- RunPCA(merged_samples, features = rownames(merged_samples))  
-
+scree()
 
 ## the genes that are not expressed in one of the samples, are removed throughout the PCA 
 length(DA_genes_not_in_Lew) + length(Lew_genes_not_in_DA)
@@ -152,6 +158,7 @@ merged_samples <- RunHarmony(merged_samples, "sample_name",assay.use="RNA")
 
 ########   Cluster the merged samples   #########
 dir = 'Results/'
+PC_NUMBER = 10
 merged_samples <- FindNeighbors(merged_samples,
                                 reduction="harmony",
                                 dims=1:PC_NUMBER,
@@ -208,7 +215,7 @@ PC_standardDev <- apply(pca_embedding_df, 2, sd)
 elbow_plot(PC_standardDev, title = 'PCA on last 2 rat samples')
 ElbowPlot(merged_samples)
 top_pc = 15
-
+#top_pc = 10
 ### varimax PCA
 rot_standardDev <- apply(rot_data$rotScores, 2, sd)
 elbow_plot(rot_standardDev, title = 'Varimax on last 2 rat samples')
@@ -337,6 +344,9 @@ df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1],
                       gene_expression=a_gene_expression,
                       detectedGenes_More250=merged_samples$nFeature_RNA>250
                       )
+df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1], 
+                      UMAP_2=getEmb(merged_samples, 'umap')[,2], 
+                      library_size= merged_samples$nCount_RNA)
 
 pdf(paste0(plot_dir, 'umap_plots_oldSamples_Mt_removed.pdf'))
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=library_size))+geom_point()+theme_classic()+scale_color_viridis(direction = -1)

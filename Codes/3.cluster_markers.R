@@ -5,9 +5,9 @@ library(plyr)
 
 
 map = 'new' #'old' 
-map='subcluster'
+#map='subcluster'
 
-output_file = 'mt_removed'
+output_file = 'mt_removed_immuneSub_c17Inc'
 if(map == 'old') output_file = 'mt40_lib1500_MTremoved'
 
 merged_samples = NULL
@@ -18,12 +18,14 @@ table(merged_samples$sample_name)
 merged_samples <- readRDS('Results/new_samples/Immune_subclusters.rds') 
 merged_samples <- readRDS('Results/new_samples/endothelial_subclusters.rds') 
 
-new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub.RData"
+#new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub.RData"
+new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub_c17Included.RData"
+
 new_data_scCLustViz_object_endothelial <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_EndothelialSub.RData"
 
 load(new_data_scCLustViz_object_Immune)
 merged_samples = your_scRNAseq_data_object
-
+merged_samples = seur
 #### finding markers for the clusters ####
 
 #### final clusters - old samples: resolution 0.6, 17 clusters >> running on screen: runner4
@@ -36,6 +38,7 @@ merged_samples = your_scRNAseq_data_object
 if(map=='new') merged_samples$cluster = as.character(merged_samples$res.0.6)
 if(map=='old') merged_samples$cluster = as.character(merged_samples$res.0.6)
 if(map=='subcluster') merged_samples$cluster = as.character(sCVdata_list$RNA_snn_res.1@Clusters)
+if(map=='subcluster') merged_samples$cluster = as.character(sCVdata_list$res.1@Clusters)
 
 Idents(merged_samples) <- paste0('cluster_', as.character(merged_samples$cluster))
 cluster_names <-  levels(merged_samples)
@@ -87,7 +90,7 @@ saveRDS(Cluster_markers_final, paste0('Results/',map,'_samples/Cluster_markers_'
 
 
 #### saving markers #####
-#dir.create(paste0('Results/',map,'_samples/final_markers_',output_file, '/'))
+dir.create(paste0('Results/',map,'_samples/final_markers_',output_file, '/'))
 for(i in 1:length(Cluster_markers_final)){
   #df <- data.frame(genes=rownames(Cluster_markers[[i]]),
   #                 score=Cluster_markers[[i]]$ranking_score)

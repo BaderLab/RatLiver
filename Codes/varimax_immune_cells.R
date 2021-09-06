@@ -104,24 +104,30 @@ summary(as.vector(abs(GetAssayData(x) - GetAssayData(y))))
 
 ## add the initial clustering info
 merged_samples_sub$init_clusters <- immune_cells_cluster_info
+
+merged_samples <- readRDS('Results/new_samples/Immune_subclusters_updated.rds') 
+
 ## add the clustering resolution of the subclustering results
-load('Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub.RData')
+load('Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub_c17Included.RData')
 merged_samples_sub$immune_clusters = sCVdata_list$RNA_snn_res.1@Clusters
+merged_samples_sub$immune_clusters = sCVdata_list$res.1@Clusters
+
+###### Hep removed dataset - needs additional scaling for the PCA step
+merged_samples_sub = readRDS('Results/new_samples/Immune_subclusters_labelCorrect_HepRemoved.rds')
+merged_samples_sub = ScaleData(merged_samples_sub)
 
 
 temp.df <- data.frame(str_split_fixed(colnames(merged_samples_sub), pattern = '_', n=6))
 merged_samples_sub$sample_name <- temp.df$X2
+
   
 ### needed data for the varimax PCA 
 merged_samples_sub <- RunPCA(merged_samples_sub, features = rownames(merged_samples_sub))  
 
 loading_matrix = Loadings(merged_samples_sub, 'pca')
-gene_exp_matrix = GetAssayData(merged_samples_sub, assay = 'RNA')
+gene_exp_matrix = GetAssayData(merged_samples_sub, assay = 'RNA') #SCT
 dim(gene_exp_matrix)
 dim(loading_matrix)
-
-merged_samples <- readRDS('Results/new_samples/Immune_subclusters_updated.rds') 
-
 
 
 rot_data <- get_varimax_rotated(gene_exp_matrix, loading_matrix)
@@ -131,8 +137,8 @@ colnames(scores) = paste0('PC_', 1:ncol(scores))
 dim(scores)
 dim(rotatedLoadings)
 dim(merged_samples_sub) ### running PCA removes around 20 genes which have low variance
-saveRDS(rot_data, 'Results/new_samples/immune_varimax_results.rds')
-
+#saveRDS(rot_data, 'Results/new_samples/immune_varimax_results_cl17Inc.rds')
+#saveRDS(rot_data, 'Results/new_samples/immune_varimax_results_cl17Inc_HepRemoved.rds')
 
 merged_samples <- merged_samples_sub
 ##### Visualize the rotated PCs and evaluate mapping with clusters ######
@@ -144,7 +150,7 @@ pca_embedding_df <- data.frame(Embeddings(merged_samples,reduction = 'pca'))
 PC_standardDev <- apply(pca_embedding_df, 2, sd)
 elbow_plot(PC_standardDev, title = 'PCA on last 2 rat samples - immune cells')
 ElbowPlot(merged_samples)
-top_pc = 10
+top_pc = 12
 
 ### varimax PCA
 rot_standardDev <- apply(rot_data$rotScores, 2, sd)
@@ -154,7 +160,7 @@ rot_percVar = (rot_standardDev^2 * 100)/sum(rot_standardDev^2)
 names(rot_percVar) <- paste0(1:(length(rot_percVar)))
 perc_variance_threshold = 0.5
 PCs_to_check <- as.numeric(names(rot_percVar[rot_percVar>perc_variance_threshold  ]))
-PCs_to_check <- 1:33
+PCs_to_check <- c(1:20,31:50)
 
 #### PC and varimax correlation with technical covariates ####
 
@@ -175,7 +181,7 @@ pca_embedding_df$cluster <- merged_samples$init_clusters
 ##### Visualizing the PCA plots before the rotation #####
 
 plot_dir = 'Plots/'
-pdf(paste0(plot_dir, 'PCA_plots_mergedNewSamples_immuneCells.pdf'),width = 14,height=12)
+pdf(paste0(plot_dir, 'PCA_plots_mergedNewSamples_immuneCells_c17Inc.pdf'),width = 14,height=12)
 
 for(i in 1:top_pc){
   df = data.frame(PC_1=pca_embedding_df$PC_1,
@@ -199,28 +205,29 @@ for(i in 1:top_pc){
 dev.off()
 
 
-
-colnames(embedd_df_rotated) <- paste0('Varimax_', 1:ncol(embedd_df_rotated))
+embedd_df_rotated = embedd_df_rotated_2
+#colnames(embedd_df_rotated) <- paste0('Varimax_', 1:ncol(embedd_df_rotated))
 ##### Visualizing the PCA plots after the varimax rotation #####
-pdf(paste0(plot_dir, 'VarimaxPCA_scTrans_mergedNewSamples_immuneCells.pdf'),width = 14,height=13) 
+pdf(paste0(plot_dir, 'VarimaxPCA_scTrans_mergedNewSamples_immuneCells_c17Inc.pdf'),width = 14,height=13) 
 
 for(i in PCs_to_check){ 
   pc_num = i
   rot_df <- data.frame(Varimax_1=embedd_df_rotated$Varimax_1,
                        emb_val=embedd_df_rotated[,pc_num],
-                       cluster=as.character(merged_samples$init_clusters),
-                       subcluster=as.character(merged_samples$immune_clusters),
+                       #cluster=as.character(merged_samples$final_cluster),
+                       subcluster=as.character(merged_samples$cluster),
+                       label = as.character(merged_samples$label),
                        Library_size=merged_samples$nCount_RNA,
                        num_expressed_genes=merged_samples$nFeature_RNA,
                        sample_name = merged_samples$sample_name)
   
   p1=ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=subcluster))+geom_point()+
     theme_classic()+ylab(paste0('Varimax_',i))+scale_color_manual(values=colorPalatte)
-  p2=ggplot(rot_df, aes(x=cluster, y=emb_val, fill=cluster))+geom_violin()+
+  p2=ggplot(rot_df, aes(x=subcluster, y=emb_val, fill=subcluster))+geom_boxplot()+
     theme_classic()+scale_fill_manual(values=colorPalatte)
   p3=ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=sample_name))+geom_point()+
     theme_classic()+ylab(paste0('Varimax_',i))
-  p4=ggplot(rot_df, aes(x=sample_name, y=emb_val, fill=sample_name))+geom_violin()+theme_classic()
+  p4=ggplot(rot_df, aes(x=sample_name, y=emb_val, fill=sample_name))+geom_boxplot()+theme_classic()
   
   gridExtra::grid.arrange(p1,p2,p3,p4,ncol=2,nrow=2)
 }

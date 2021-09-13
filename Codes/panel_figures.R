@@ -276,9 +276,7 @@ markers_final = unique(c(markers[1:div_num],'Ptprc', 'Cd68', markers[(div_num+1)
 markers_final = unique(c('Ptprc', 'Cd68',markers))
 Idents(merged_samples2) <- factor(df_umap$label, levels = set_2_cl_ord)
 DotPlot(merged_samples2, features = markers_final) + RotatedAxis()+ xlab('Markers')+ylab('')+theme(axis.text.x = element_text(size=11))
-
-
-
+#split.by = "groups"
 
 
 ############## Varimax-related plots ##############

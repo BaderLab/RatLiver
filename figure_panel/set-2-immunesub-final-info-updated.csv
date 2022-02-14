@@ -1,0 +1,15 @@
+Clusters,Annotation,label,Top Genes,Other Genes,,,,,,
+0,CD3 T Cell,Cd3 T cell (0),Cd3g,Cd3e,Cd3d,Fam189b,Lgals1,Cd2,Cd247,
+1,NK Like Cells,NK-like cell (1),Ccl5,Gzma,Xcl1,Prf1,Gzmm,Nkg7,Ccl4,Klrb1a
+2,Non Inflammatory Macrophage,Non-Inf Mac (2),C1qa,Cd5l,Clec4f,Vsig4,C1qb,C1qc,Marco,Aif1
+3,B Cell,B cell (3),Cd79b,Ighm,Cd74,Fcmr,Fcrla,Bank1,
+4,Inflammatory Macrophage,Inf Mac (4),S100a4,Lyz2,S100a6,Cebpb,S100a11,Lsp1,Fcer1g,
+5,Inflammatory Macrophage*,Inf Mac (5),RT1-Db1,Cst3,Cd74,Lyz2,S100a11,S100a4,
+6,Hepatocytes & Macrophages*,Mac & Hep (6),C1qa,C1qb,C1qc,Gc,Serpina1,Ttr,
+7,Dendritic Cell & B Cell **,B cell & pDC (7),Irf8,Gapt,Cd74,Siglech,Tcf4,Ptcra,
+8,NK Like Cell,NK-like cell (8),Gzmk,Gzmm,Nkg7,Klrb1a,Klrd1,Gzma,Il2rb,
+9,LSEC & Macrophage ***,Mac & LSEC (9),Clec4f,Mrc1,C1qc,Sparc,Lyve1,Fcgr2b,
+10,Inflammatory Macrophage,Inf Mac (10),S100a9,S100a8,Lyz2,Tspo,S100a11,Fos,
+11,Non Inflammatory Macrophage,Macrophage (11),C1qb,C1qc,C1qa,Fcgr3a,Aif1,Axl,
+12,gd T Cell,gd T cell (12),Stmn1,Top2a,Hmgb2,Mki67,Ube2c,H2afx,Tubb5,Cenpf
+13,Non Inflammatory Macrophage,Non-Inf Mac (13),Cd5l,Clec4f,Cd163,C1qa,Ccl6,Mrc1,C1qb,Vsig4

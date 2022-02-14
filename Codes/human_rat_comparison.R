@@ -21,7 +21,7 @@ get_scaled_by_gene <- function(x){
 
 
 #set1_info <- read.csv('figure_panel/set-1-final-info.csv')
-set1_info <- read.csv('figure_panel/set-2-final-info.csv')
+set1_info <- read.csv('figure_panel/set-2-final-info-updated.csv')
 colnames(set1_info)[1] = 'clusters'
 head(set1_info)
 
@@ -88,7 +88,13 @@ rat_old_cluster_average_exp_df <- readRDS('Results/rat_new_cluster_average_exp_a
 head(rat_old_cluster_average_exp_df)
 rat_cluster_average.df = rat_old_cluster_average_exp_df
 
+colnames(rat_cluster_average.df)
+colnames_set2 = c("pDC (17)", "Naive T cell (10)", "Erythroid (5)", "Hep (0)" , "Hep (1)", "Hep (14)",
+                  "Hep (15)", "Hep (2)", "Hep (3)", "Hep (9)", "Inflammatory Mac (11)", "LSEC (4)",
+                  "LSEC (6)", "Non-Inflammatory Mac (8)", "Mature B cell (12)", "gd T cell (7)", 
+                  "Non-Inflammatory Mac (13)", "Stellate (16)", "rat_ID" )
 
+colnames(rat_cluster_average.df) = colnames_set2
 
 ############## generating the human gene expression matrix
 #devtools::install_github("BaderLab/HumanLiver")
@@ -243,54 +249,66 @@ saveRDS(informative_rat_genes, 'Results/human_set2Rat_corGenes.rds')
 ######################################################## 
 ############ rat set-1 and set-2 comparison ############
 
+
+##### selecting the number of highly variable features to use #####
+nFeatures = 500
+
+old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
+load(old_data_scClustViz_object)
+set1_data <- your_scRNAseq_data_object
+DefaultAssay(set1_data) <- 'RNA'
+set1_data <- FindVariableFeatures(set1_data, nfeatures=nFeatures)
+set1_HVGs <- VariableFeatures(set1_data)
+rm(your_scRNAseq_data_object)
+
+new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_labelCor.RData"
+load(new_data_scCLustViz_object)
+set2_data <- your_scRNAseq_data_object
+DefaultAssay(set2_data) <- 'RNA'
+set2_data <- FindVariableFeatures(set2_data, nfeatures=nFeatures)
+set2_HVGs <- VariableFeatures(set2_data)
+
+set1_HVGs == set2_HVGs
+#######################################
+
+
+colnames_set2 = c("pDC (17)", "Naive T cell (10)", "Erythroid (5)", "Hep (0)" , "Hep (1)", "Hep (14)",
+                  "Hep (15)", "Hep (2)", "Hep (3)", "Hep (9)", "Inflammatory Mac (11)", "LSEC (4)",
+                  "LSEC (6)", "Non-Inflammatory Mac (8)", "Mature B cell (12)", "gd T cell (7)", 
+                  "Non-Inflammatory Mac (13)", "Stellate (16)", "rat_ID" )
+
 rat_new_cluster_average_exp_df = readRDS('Results/rat_new_cluster_average_exp_all.rds')
+colnames(rat_new_cluster_average_exp_df) = colnames_set2
 rat_old_cluster_average_exp_df <- readRDS('Results/rat_old_cluster_average_exp_all.rds')
 
-set1_HVGs = readRDS('Results/set1_rat_HVGs.rds')
-set2_HVGs = readRDS('Results/set2_rat_HVGs.rds')
+head(rat_new_cluster_average_exp_df)
+head(rat_old_cluster_average_exp_df)
 
-rat_to_human_genes <- readRDS('~/RatLiver/Results/rat_to_human_genes_all.rds')
-head(rat_to_human_genes)
+#rat_to_human_genes <- readRDS('~/RatLiver/Results/rat_to_human_genes_all.rds')
 
 ##### set-2 - filtering genes based on HVGs and one to one orthologs 
-tmp = merge(rat_new_cluster_average_exp_df, rat_to_human_genes, by.x='rat_ID', by.y='symbol')
-one2one_genes = tmp$rat_ID[tmp$hsapiens_homolog_orthology_type == 'ortholog_one2one']
-one2one_genes = one2one_genes[!is.na(one2one_genes)]
-rat_new_cluster_average_exp_df <- rat_new_cluster_average_exp_df[rat_new_cluster_average_exp_df$rat_ID %in% one2one_genes &
-                                                                   rat_new_cluster_average_exp_df$rat_ID %in%  set2_HVGs,]
-dim(rat_new_cluster_average_exp_df)
-
+rat_new_cluster_average_exp_df <- rat_new_cluster_average_exp_df[rat_new_cluster_average_exp_df$rat_ID %in%  set2_HVGs,]
 ##### set-1- filtering genes based on HVGs and one to one orthologs
-tmp = merge(rat_old_cluster_average_exp_df, rat_to_human_genes, by.x='rat_ID', by.y='symbol')
-one2one_genes = tmp$rat_ID[tmp$hsapiens_homolog_orthology_type == 'ortholog_one2one']
-one2one_genes = one2one_genes[!is.na(one2one_genes)]
-rat_old_cluster_average_exp_df <- rat_old_cluster_average_exp_df[rat_old_cluster_average_exp_df$rat_ID %in% one2one_genes &
-                                                                   rat_old_cluster_average_exp_df$rat_ID %in% set1_HVGs,]
+rat_old_cluster_average_exp_df <- rat_old_cluster_average_exp_df[rat_old_cluster_average_exp_df$rat_ID %in% set1_HVGs,]
+
+dim(rat_new_cluster_average_exp_df)
 dim(rat_old_cluster_average_exp_df)
 
 colnames(rat_new_cluster_average_exp_df) = paste0(colnames(rat_new_cluster_average_exp_df), '-s2')
 colnames(rat_old_cluster_average_exp_df) = paste0(colnames(rat_old_cluster_average_exp_df), '-s1')
 
-head(rat_old_cluster_average_exp_df)
-head(rat_new_cluster_average_exp_df)
-
-
-dim(rat_old_cluster_average_exp_df)
-dim(rat_new_cluster_average_exp_df)
-
 rat_merged = merge(rat_old_cluster_average_exp_df, rat_new_cluster_average_exp_df, by.x='rat_ID-s1', by.y='rat_ID-s2')
-#rat_merged = rat_merged[rat_merged$`rat_ID-s1` %in% informative_rat_genes,]
+
 dim(rat_merged) ## additional layers to ne to be added to the filter -> 10126 one-2-one orthos
 rat_cor_mat = cor(rat_merged[,-1],method = 'pearson')
-#rat_cor_mat = rat_cor_mat[rownames(rat_cor_mat)!='Hep (16)-s1',colnames(rat_cor_mat)!='Hep (16)-s1']
-#rat_cor_mat = rat_cor_mat[rownames(rat_cor_mat)!='Erythroid (5)-s2',colnames(rat_cor_mat)!='Erythroid (5)-s2']
-
 colnames(rat_cor_mat)
 
 colnames(rat_cor_mat) = gsub('\\-s2', '', gsub('\\-s1', '', colnames(rat_cor_mat)))
 colnames(rat_cor_mat) <- gsub('Inflammatory', 'Inf', colnames(rat_cor_mat))
 rownames(rat_cor_mat) = colnames(rat_cor_mat)
 rat_cor_mat = rat_cor_mat[1:17,18:ncol(rat_cor_mat)]
+pheatmap(rat_cor_mat,color = inferno(20),  clustering_method='ward.D2')
+
 
 phm =pheatmap(rat_cor_mat,color = inferno(20),  clustering_method='ward.D') # the first 20 clusters are for human map
 phmr <- phm$tree_row$order
@@ -353,4 +371,13 @@ pheatmap(cor_mat.sub,cluster_rows = F, main=paste0('new samples-', method, '-one
          display_numbers =fdr_mat_char)
 head(rat.human.merged)
 
+
+
+
+
+#############
+tmp = merge(rat_old_cluster_average_exp_df, rat_to_human_genes, by.x='rat_ID', by.y='symbol')
+one2one_genes = tmp$rat_ID[tmp$hsapiens_homolog_orthology_type == 'ortholog_one2one']
+one2one_genes = one2one_genes[!is.na(one2one_genes)]
+rat_old_cluster_average_exp_df <- rat_old_cluster_average_exp_df[rat_old_cluster_average_exp_df$rat_ID %in% one2one_genes,] 
 

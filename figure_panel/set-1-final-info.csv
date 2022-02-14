@@ -1,0 +1,18 @@
+Cluster #,Annotation,label,topDE1,topDE2,topDE3,topDE4,topDE5,otherDE1,otherDE2,otherDE3
+0,Hepatocyte (More Pericentral),Hep (0),Apoc1,Fabp1,Fth1,Alb,,,,
+1,Hepatocyte (Midzonal),Hep (1),G6pc,Slco1b2,Igfbp1,Insig1,Hamp,Alb,Pck1,
+2,Hepatocyte (More Periportal),Hep (2),Cps1,Scd,Cyp2a1,Itih3,Fgb,Alb,,
+3,LSEC (Central Venous),LSEC (3),Lyve1,Ctsl,Fcgr2b,Sparc,Stab2,Ifi27,Calcrl,Ramp2
+4,Hepatocyte (More Periportal),Hep (4),Cps1,Itih3,Calr,Itih3,C3,,,
+5,Non Inflammatory Macrophage,Non-Inflammatory Mac (5),Marco,Vsig4,Clec4f,Cd5l,Hmox1,Aif1,Cd68,Ptprc
+6,Hepatocyte,Hep (6),Fabp1,Dbi,Apoa2,Cox8a,Alb,Apoc3,Apoc1,
+7,Hepatic Stellate Cell,Stellate (7),Lyve1,Calcrl,Ecm1,Igfbp7,Sparc,Rbp1,Co3a1,
+8,Hepatocyte (More Periportal),Hep (8),C3,Itih4,Cps1,Scd,Cyp2a1,Alb,,
+9,Inflammatory Macrophage,Inflammatory Mac (9),Cd74,Lyz2,RT1-Db1,RT1-Da,Il18,Lsp1,S100a11,Ptprc
+10,Non Inflammatory Macrophage,Non-Inflammatory Mac (10),Marco,Vsig4,Cd5l,Cd163,Hmox1,Clec4f,C1qb,C1qc
+11,LSEC (Both Central & Portal),LSEC (11),Lyve1,Fcgr2b,Ctsl,Fam167b,Eng,Id3,Calcrl,Ramp2
+12,Hepatocyte (More Pericentral),Hep (12),Slco1b2,Dbi,Apoc3,Apoc1,Alb,,,
+13,Lymphocyte (NK and T),NK-like and T cells (13),Klrd1,Gzmk,Cd7,Ccl5,Gzma,Nkg7,Tmsb4x,Il2rb
+14,Hepatic Stellate Cell,Stellate (14),Lyve1,Calcrl,Ecm1,Igfbp7,Sparc,Bgn,Rbp1,Co3a1
+15,Hepatocyte (More Pericentral),Hep (15),Apoc1,Apoc3,Dbi,Cox7b,Rpl10,Alb,,
+16,Hepatocyte (More Periportal),Hep (16),C3,Itih4,Scd,Cyp2a1,Arg1,Alb,,

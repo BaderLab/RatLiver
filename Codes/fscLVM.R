@@ -33,8 +33,13 @@ dim(data)
 
 # gmtfile <- system.file("extdata", "reactome_subset.gmt", package = "slalom")
 gmtfile <- '~/Rat_GOBP_AllPathways_no_GO_iea_May_01_2020_symbol.gmt'
-genesets <- GSEABase::getGmt(gmtfile)
+genesets0 <- GSEABase::getGmt(gmtfile)
+length(genesets0)
+num_genesets = 4000
+geneset_indices = unique(round(runif(n = num_genesets, min = 1, max = length(genesets0))))
+genesets = genesets0[geneset_indices]
 
+names(genesets)
 
 ## Slalom fits relatively complicated hierarchical Bayesian factor analysis models
 ## with data and results stored in a "SlalomModel" object. 
@@ -47,7 +52,7 @@ start.time <- Sys.time()
 model <- initSlalom(model)
 
 ## Train a SlalomModel to infer model parameters.
-model <- trainSlalom(model, nIterations = 10)
+model <- trainSlalom(model, nIterations = 10000)#, nIterations = 1000
 
 ## stop measuring time
 end.time <- Sys.time()
@@ -59,12 +64,18 @@ print(time.taken)
 data <- addResultsToSingleCellExperiment(data, model, n_active=1e20, annotated=T,
                                          unannotated_dense=T, unannotated_sparse=T,mad_filter=0.4,
                                          add_loadings=T, dimred='slalom', check_convergence=F)
+run_number = paste0(num_genesets, '_gs')
 ### saving the results
-data <- readRDS('~/RatLiver/Results/new_samples/fsclvm_model_immuneCells.rds')
+saveRDS(data, paste0('~/RatLiver/Results/new_samples/fsclvm_model_immuneCells_',run_number,'_2.rds'))
+
+
+
+data <- readRDS('~/RatLiver/Results/new_samples/fsclvm_model_immuneCells_.rds')
  
 ### accessing embedding and loading matrix
 loading.slalom <- data.frame(rowData(data))
 embedding.slalom <- data.frame(reducedDim(data, 'slalom'))
+dim(embedding.slalom)
 embedding.slalom$cluster= merged_samples_sub$immune_clusters
 embedding.slalom$sample= merged_samples_sub$sample_name
 
@@ -113,7 +124,48 @@ dev.off()
 ## Plot relevance for all terms
 plotRelevance(model)
 ## Plot highest loadings of a factor
-plotLoadings(model, "CELL_CYCLE")
+plotLoadings(model, "CELL_CYCLE") 
 
+########### evaluating the run-time
+library(readxl)
+fscLVM_runtime <- data.frame(read_excel("~/fscLVM_runtime.xlsx"))
+fscLVM_runtime = fscLVM_runtime[-nrow(fscLVM_runtime),]
+fit <- lm(run_time_h ~ retained_gs, data = fscLVM_runtime)
+fit_info = paste("Adj R2 = ",signif(summary(fit)$adj.r.squared, 5),
+                 "Intercept =",signif(fit$coef[[1]],5 ),
+                 " Slope =",signif(fit$coef[[2]], 5),
+                 " P =",signif(summary(fit)$coef[2,4], 5))
+head(fscLVM_runtime)      
+ggplot(fscLVM_runtime, aes(x=retained_gs, y=run_time_h, color=final_gs))+
+  geom_point(size=3)+scale_color_continuous(name='# Inferred\nFactors')+
+  xlab('Number of retained genesets\n(after dropping uninformative input genesets)')+ylab('Run time (h)')+
+  ggtitle(paste0('Run time of fscLVM with increasing number of input genesets\ninput data dimentions: 2000 genes - 978 cells'),fit_info)+
+  geom_smooth(method='lm',  color='turquoise4', size=0.4, se=F)
+
+#### predicting the run-time for a given number of genesets
+new = data.frame(retained_gs=c(20000))
+predict(fit,new )
+
+
+
+fit <- lm(run_time_h ~ intial_gs, data = fscLVM_runtime)
+fit_info = paste("Adj R2 = ",signif(summary(fit)$adj.r.squared, 5),
+                 "Intercept =",signif(fit$coef[[1]],5 ),
+                 " Slope =",signif(fit$coef[[2]], 5),
+                 " P =",signif(summary(fit)$coef[2,4], 5))
+head(fscLVM_runtime)      
+ggplot(fscLVM_runtime, aes(x=intial_gs, y=run_time_h, color=final_gs))+
+  geom_point(size=3)+scale_color_continuous(name='# Inferred\nFactors')+
+  xlab('Number of raw genesets\n(Before dropping uninformative input genesets)')+ylab('Run time (h)')+
+  ggtitle(paste0('Run time of fscLVM with increasing number of input genesets\ninput data dimentions: 2000 genes - 978 cells'),fit_info)+
+  geom_smooth(method='lm',  color='red', size=0.4, se=F)
+
+new = data.frame(intial_gs=c(20000))
+predict(fit,new )
+
+
+fit <- lm(retained_gs ~ intial_gs, data = fscLVM_runtime)
+new = data.frame(intial_gs=c(20000))
+predict(fit,new )
 
 

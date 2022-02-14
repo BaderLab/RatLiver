@@ -90,14 +90,23 @@ head(mouse_cluster_average.df.homolog)
 rat_new_cluster_average_exp_df <- readRDS('Results/rat_new_cluster_average_exp_all.rds')
 rat_old_cluster_average_exp_df <- readRDS('Results/rat_old_cluster_average_exp_all.rds')
 
+
+##### updating the cell-type annotations of set2
+colnames_set2 = c("pDC (17)", "Naive T cell (10)", "Erythroid (5)", "Hep (0)" , "Hep (1)", "Hep (14)",
+                  "Hep (15)", "Hep (2)", "Hep (3)", "Hep (9)", "Inflammatory Mac (11)", "LSEC (4)",
+                  "LSEC (6)", "Non-Inflammatory Mac (8)", "Mature B cell (12)", "gd T cell (7)", 
+                  "Non-Inflammatory Mac (13)", "Stellate (16)", "rat_ID" )
+colnames(rat_new_cluster_average_exp_df) = colnames_set2
+
+
 set2_HVGs = readRDS('Results/set2_rat_HVGs.rds')
 set1_HVGs = readRDS('Results/set1_rat_HVGs.rds')
 
 merged_set1rat_mouse = merge(rat_old_cluster_average_exp_df[set1_HVGs,], mouse_cluster_average.df.homolog, by.y='symbol', by.x='rat_ID')
 merged_set2rat_mouse = merge(rat_new_cluster_average_exp_df[set2_HVGs,], mouse_cluster_average.df.homolog, by.y='symbol', by.x='rat_ID')
 
-merged_set1rat_mouse = merged_set1rat_mouse[,!colnames(merged_set1rat_mouse)%in%c('rat_ID', 'mouse_genes')]
-merged_set2rat_mouse = merged_set2rat_mouse[,!colnames(merged_set2rat_mouse)%in%c('rat_ID', 'mouse_genes')]
+merged_set1rat_mouse = merged_set1rat_mouse[,!colnames(merged_set1rat_mouse) %in% c('rat_ID', 'mouse_genes')]
+merged_set2rat_mouse = merged_set2rat_mouse[,!colnames(merged_set2rat_mouse) %in% c('rat_ID', 'mouse_genes')]
 dim(merged_set1rat_mouse)
 dim(merged_set2rat_mouse)
 
@@ -105,9 +114,7 @@ num_set1rat_clusters = ncol(rat_old_cluster_average_exp_df) -1
 num_set2rat_clusters = ncol(rat_new_cluster_average_exp_df) -1
 
 #### set-1
-colnames(merged_set1rat_mouse)[(num_set1rat_clusters+1):ncol(merged_set1rat_mouse)] = str_sub(string = colnames(merged_set1rat_mouse)[(num_set1rat_clusters+1):ncol(merged_set1rat_mouse)],
-                    
-                                                                                                                                                                        start = 4)
+colnames(merged_set1rat_mouse)[(num_set1rat_clusters+1):ncol(merged_set1rat_mouse)] = str_sub(string = colnames(merged_set1rat_mouse)[(num_set1rat_clusters+1):ncol(merged_set1rat_mouse)],start = 4)
 dim(merged_set1rat_mouse)
 cor.mat.set1 <- cor(merged_set1rat_mouse,method = 'pearson')
 rownames(cor.mat.set1) <- gsub('Inflammatory', 'Inf', rownames(cor.mat.set1))
@@ -118,7 +125,7 @@ pheatmap(cor.mat.set1[1:num_set1rat_clusters,(num_set1rat_clusters+1):ncol(cor.m
 colnames(merged_set2rat_mouse)[(num_set2rat_clusters+1):ncol(merged_set2rat_mouse)] = str_sub(string = colnames(merged_set2rat_mouse)[(num_set2rat_clusters+1):ncol(merged_set2rat_mouse)],
                                                                                               start = 4)
 dim(merged_set2rat_mouse)
-cor.mat.set2 <- cor(merged_set2rat_mouse, method = 'spearman')
+cor.mat.set2 <- cor(merged_set2rat_mouse, method = 'pearson')
 pheatmap(cor.mat.set2[1:num_set2rat_clusters,(num_set2rat_clusters+1):ncol(cor.mat.set2)],
          color = inferno(20),main='', clustering_method='ward.D') 
 

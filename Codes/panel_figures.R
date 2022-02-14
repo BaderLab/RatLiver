@@ -5,6 +5,10 @@ library(plyr)
 library(stats)
 library(ggpubr)
 
+library(RColorBrewer)
+library(viridis)
+library(scales)
+
 ############
 new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_labelCor.RData"
 old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
@@ -23,9 +27,11 @@ load(new_data_scCLustViz_object_endothelial)
 #### the new immune subcluster data ####
 merged_samples <- your_scRNAseq_data_object
 merged_samples$cluster = as.character(sCVdata_list$res.0.6@Clusters)
-merged_samples$cluster = as.character(sCVdata_list$RNA_snn_res.1@Clusters)
 merged_samples$cluster = as.character(sCVdata_list$res.1@Clusters)
+merged_samples$cluster = as.character(sCVdata_list$res.1@Clusters)
+merged_samples$cluster = as.character(sCVdata_list$RNA_snn_res.1@Clusters)
 
+table(merged_samples$orig.ident)
 merged_samples$sample_name = sapply(str_split(colnames(merged_samples), '_'), '[[', 2)
 merged_samples$sample_name = ifelse(merged_samples$orig.ident=='rat_DA_01_reseq', 'DA-1', 
                                     ifelse(merged_samples$orig.ident=='rat_DA_M_10WK_003', 'DA-2',
@@ -34,7 +40,27 @@ merged_samples$strain = sapply(str_split(colnames(merged_samples), '_'), '[[', 2
 
 merged_samples$EndoSub = ifelse(colnames(merged_samples) %in% 
                                     colnames(your_scRNAseq_data_object), 'Endothelial\ncells', 'other')
-#
+
+#############################################################################
+####### Evaluating the number of Ptprc+ cells in set-1 map vs set2 ##########
+############################################################ 
+##########  new immune enriched map : num 914, percentage:  0.24 of cells were Ptprc+
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.0000  0.0000  0.0000  0.3258  0.0000  2.7726
+
+##########  old map : num 969, percentage:  0.04 of cells were Ptprc+
+## Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+## 0.00000 0.00000 0.00000 0.03149 0.00000 1.60944 
+############################################################
+Ptprc_exp = GetAssayData(merged_samples)['Ptprc',]
+round(sum(Ptprc_exp>0)/length(Ptprc_exp),2) 
+summary(Ptprc_exp)
+summary(Ptprc_exp[Ptprc_exp>0])
+
+##################################################################
+
+
+
 df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1], 
                       UMAP_2=getEmb(merged_samples, 'umap')[,2], 
                       label=merged_samples$EndoSub,
@@ -50,56 +76,112 @@ df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1],
                       sample=merged_samples$sample_name,
                       strain=merged_samples$strain,
                       Ptprc=GetAssayData(merged_samples)['Ptprc',], 
-                      umi=colnames(merged_samples))
+                      umi=colnames(merged_samples), 
+                      libSize=merged_samples$nFeature_RNA)
 
 df_umap$Cd14 <-  GetAssayData(merged_samples)['Cd14',]
 ##### adding the final annotations to the dataframe
 set1_info <- read.csv('figure_panel/set-1-final-info.csv')
-set1_info <- read.csv('figure_panel/set-2-final-info.csv')
-set1_info <- read.csv('figure_panel/set-2-immunesub-final-info.csv')
+set1_info <- read.csv('figure_panel/set-2-final-info-updated.csv')
+set1_info <- read.csv('figure_panel/set-2-Endosub-final-info.csv')
+set1_info <- read.csv('figure_panel/set-2-immunesub-final-info-updated.csv')
 colnames(set1_info)[1] = 'clusters'
-set1_info <- set1_info[1:14,]
+#set1_info <- set1_info[1:18,] # 14
 set1_info$clusters = as.character(set1_info$clusters)
-df_umap = merge(df_umap, set1_info[,1:3], by.x='clusters', by.y='clusters', all.x=T,order=F)
+df_umap = merge(df_umap, set1_info[,1:3], by.x='clusters', by.y='clusters', all.x=T, order=F)
 #### re-ordering the rows based on UMIs of the initial data
 df_umap <- df_umap[match(colnames(merged_samples),df_umap$umi),]
 df_umap$umi == colnames(merged_samples)
 
 
-library(RColorBrewer)
+colorBlindGrey8   <- c("#999999", "#E69F00", "#56B4E9", "#009E73", 
+                       "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+safe_colorblind_palette <- c("#88CCEE", "#CC6677", "#DDCC77", "#117733", "#332288", "#AA4499", 
+                             "#44AA99", "#999933", "#882255", "#661100", "#6699CC", "#888888")
+
 # Define the number of colors you want
 nb.cols <- length(names(table(merged_samples$cluster))) #18 #14
 mycolors <- colorRampPalette(brewer.pal(8, "Set1"))(nb.cols)
+show_col(c(mycolors,colorBlindGrey8,safe_colorblind_palette))
+matrix(c(mycolors,colorBlindGrey8,safe_colorblind_palette),nrow=6,ncol=7)
+
+### Pink, brown
+show_col(c('#F781BF','#D36E7C' , '#9E5198','#AA4499',   '#984560','#5E3C99','pink2','#882255','#661100'))
+### yellow
+show_col(c('#FFE729', '#FFAF13',  '#E66101', '#F87B0A'))
+### green
+show_col(c('#117733', '#44AA99', '#999933', '#47A265', '#3D8D95'))
+### blue
+show_col(c('#6699CC', '#5684E9', '#0072B2', '#332288'))
+## red
+c('#E41A1C')
+
+show_col(c('#999999', 'black'))
+mycolors2 = c(c('#F781BF','#D36E7C' , '#9E5198','#882255','#661100','#AA4499',   '#984560','pink2','#5E3C99'),
+              '#117733' ,
+              '#FFE729','#FFAF13', 
+              '#E41A1C', 
+              '#999933', '#47A265',
+              '#6699CC', '#0072B2')
+
+mycolors2 = c('#999999',
+              '#E41A1C',
+              '#F781BF', '#D36E7C', '#9F5198','#661100', '#984560','pink2','#5E3C99',
+              '#117733',
+              '#FFE729','#FFAF13',
+              "#F87B0A",#mature B cell,
+              "#D55E00", #'#E66101',#naive T cell,
+              '#999933', '#47A265',
+              '#3D8D95', # pDC 
+              "#5684E9")
+
 
 title = '' # 'Mt-genes removed'
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=clusters))+geom_point(alpha=0.8, size=2)+
+  theme_classic()+scale_color_manual(name='clusters',values = mycolors2)+
+  theme(text = element_text(size=15),legend.title = element_blank())#
+
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=clusters))+geom_point(alpha=0.8, size=1)+
   theme_classic()+scale_color_manual(name='clusters',values = mycolors)+
   theme(text = element_text(size=15),legend.title = element_blank())#
 
 title = '' # 'Mt-genes removed'
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=label))+geom_point(alpha=0.8, size=0.9)+
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=label))+geom_point(alpha=0.7, size=2)+
   theme_classic()+scale_color_manual(name='clusters',values = mycolors)+
-  theme(text = element_text(size=22),legend.title = element_blank())#
+  theme(text = element_text(size=16),legend.title = element_blank())#
 
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=label))+geom_point(alpha=0.7, size=1.2)+
+  theme_classic()+scale_color_manual(name='clusters',values = mycolors2)+
+  theme(text = element_text(size=15),legend.title = element_blank())#
 
 df_umap$label_hep <- ifelse(substr(df_umap$label, 1, 3)=='Hep', df_umap$label, 'Other')
 df_umap$label_lsec <- ifelse(substr(df_umap$label, 1, 4)=='LSEC', df_umap$label, 'Other')
 df_umap$label_stellate <- ifelse(substr(df_umap$label, 1, 8)=='Stellate', df_umap$label, 'Other')
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=label_stellate))+geom_point(alpha=0.8, size=3)+
-  theme_classic()+scale_color_manual(name='clusters',values = c('grey86',mycolors[16], mycolors[17]))+
-  theme(text = element_text(size=15),legend.title = element_blank())#
+df_umap$label_nonInfMac <- ifelse(substr(df_umap$label, 1, 7)=='Non-Inf', df_umap$label, 'Other')
+
+names(table(df_umap$label))
+head(df_umap)
+df_umap$num_genes = merged_samples$nFeature_RNA
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=num_genes))+geom_point(alpha=0.7, size=1)+
+  theme_classic()+scale_color_viridis('#expressed\ngenes',direction = +1)+
+  theme(text = element_text(size=17))#
 
 
 
 nb.cols <- 4
 mycolors <- colorRampPalette(brewer.pal(8, "Pastel1"))(nb.cols) #Pastel1
 
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=sample))+geom_point(alpha=0.35, size=0.7)+
+mycolors = c( "#FF9999", "#CC79A7","#56B4E9","#0072B2")
+
+
+show_col(c(mycolors, "#D55E00"))
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=sample))+geom_point(alpha=1, size=3)+
   theme_classic()+
   #scale_color_manual(values = c("#E69F00", "#009E73"))+
-  scale_color_manual(values = c("pink1", "skyblue1"))+
+  #scale_color_manual(values = c("pink1", "skyblue1"))+
   #scale_color_brewer(palette = "Set3")+
-  #scale_color_manual(values=mycolors)+
+  scale_color_manual(values=mycolors)+
   theme(text = element_text(size=19),legend.title = element_blank())
 
 ##### Marker expression over UMAP
@@ -172,17 +254,6 @@ xlabel2 = c('Hep (2)'	, 'Hep (4)',  'Hep (8)',  'Hep (16)',  'Hep (1)',
                  'LSEC (11)',	'Stellate (7)','Stellate (14)',	'NonInf Mac(5)',		
                  'NonInf Mac(10)', 'Inf Mac (9)',	'NK-like &\nT cells (13)')
 
-####### set2 labels
-set_2_cl_ord = c('Hep (1)', 'Hep (3)', 'Hep (9)', 'Hep (14)', 'Hep (15)', 'Hep (0)', 'Hep (2)', 
-  'LSEC (6)', 'LSEC (4)', 'Stellate (16)', 'Mac & DC (8)', 'Non-Inflammatory Mac (13)', 
-  'Inflammatory Mac (11)', 'NK cell (7)', 'Cd3 T cell (10)', 'Mature B cell (12)', 
-  'B cell (17)', 'Erythroid (5)')
-
-xlabel2 = c('Hep (1)', 'Hep (3)', 'Hep (9)', 'Hep (14)', 'Hep (15)', 'Hep (0)', 'Hep (2)', 
-                 'LSEC (6)', 'LSEC (4)', 'Stellate (16)', 'Mac & DC (8)', 'Non-Inf Mac (13)', 
-                 'Inf Mac(11)', 'NK cell (7)', 'Cd3 T cell (10)', 'Mature B cell (12)', 
-                 'B cell (17)', 'Erythroid (5)')
-
 ##### set-2 immune-sub labels
 
 immune_sub_labels = levels(counts_norm$cluster)
@@ -197,10 +268,12 @@ counts$cluster= factor(counts$cluster, levels = as.character(set1_info$label[1:1
 counts$cluster= factor(counts$cluster, levels = as.character(set_2_cl_ord) ) 
 
 counts$gcellType = gsub('\\(.*', '', as.character(counts$cluster))
-counts$gcellType <- ifelse(counts$cluster %in% c("B cell (3)", "DC & B cell (7)"), "B cell",
-                           ifelse(counts$cluster %in% c("Cd3 T cell (0)","gd T cells / NK-like cell (1)", "gd T cell (12)", "NK-like cell (8)"), 
-                                  "T cells", "Macrophages"))
-
+counts$gcellType2 = counts$gcellType
+counts$gcellType2[grepl(pattern = 'T cell', counts$gcellType )] = 'T cell'
+counts$gcellType2[grepl(pattern = 'T cell', counts$gcellType )] = 'T cell &\nNK-like cell'
+counts$gcellType2[grepl(pattern = 'Mac', counts$gcellType )] = 'Macrophage'
+counts$gcellType2[grepl(pattern = 'B cell', counts$gcellType )] = 'B cell'
+table(counts$gcellType2)
 
 counts$strain=sapply(strsplit(counts$sample_type,'-') ,'[[', 1)
 #write.csv(counts, 'figure_panel/set1-counts.csv')
@@ -209,28 +282,35 @@ counts$strain=sapply(strsplit(counts$sample_type,'-') ,'[[', 1)
 ggplot(data=counts, aes(x=cluster, y=Freq, fill=sample_type)) +
   geom_bar(stat="identity",color='black')+theme_classic()+#+scale_fill_brewer(palette = "Blues")+
   ylab('Counts')+xlab('Clusters')+
-  #scale_fill_manual(values=mycolors)+
+  scale_fill_manual(values=mycolors)+
   #scale_fill_manual(values = c("#E69F00", "#009E73"))+
-  scale_fill_manual(values = c("pink1", "skyblue1"))+
+  #scale_fill_manual(values = c("pink1", "skyblue1"))+
+  #scale_x_discrete(labels = xlabel2)+
   theme(text = element_text(size=15),
         axis.text.x = element_text(size=10,angle=90,color='black'),
         legend.title = element_blank())+
-  scale_x_discrete(labels = xlabel2)+xlab('')
+  xlab('')
 
 counts_split <- split( counts , f = counts$cluster )
 counts_split_norm <- lapply(counts_split, function(x) {x$Freq=x$Freq/sum(x$Freq);x})
 counts_norm <- do.call(rbind,counts_split_norm )
-ggplot(data=counts_norm, aes(x=cluster, y=Freq, fill=sample_type)) +
-  geom_bar(stat="identity",color='black')+theme_classic()+
-  ylab('Fraction of sample per cell type (%)')+xlab('Cluster')+
+
+counts_norm$cluster2 = gsub(x =counts_norm$cluster, 'Inflammatory', 'Inf')
+counts_norm$cluster2 = gsub(x =counts_norm$cluster2, 'and ', '& ')
+ggplot(data=counts_norm, aes(x=cluster2, y=Freq, fill=sample_type)) +
+  geom_bar(stat="identity",color='black',alpha=0.9)+theme_classic()+
+  ylab('Fraction of sample per cell type (%)')+
   #scale_fill_manual(values = c("#E69F00", "#009E73"))+
   #scale_fill_brewer(palette = "Set3")+
-  #scale_fill_manual(values=mycolors)+
-  scale_fill_manual(values = c("pink1", "skyblue1"))+
+  scale_fill_manual(values=mycolors)+
+  #scale_x_discrete(labels = immune_sub_labels) #scales::wrap_format(9)
+  #scale_fill_manual(values = c("pink1", "skyblue1"))+
   theme(text = element_text(size=15),
-        axis.text.x = element_text(size=11,angle=90,color='black'),
-        legend.title = element_blank()) +  xlab('') +
-  scale_x_discrete(labels = immune_sub_labels) #scales::wrap_format(9)
+        axis.text.x = element_text(size=12.5,angle=90,color='black'),
+        legend.title = element_blank()) +  
+  xlab('')
+  
+
  
 
 
@@ -238,29 +318,38 @@ ggplot(data=counts_norm, aes(x=cluster, y=Freq, fill=sample_type)) +
 ########### dodge barplots -->>> why can't I add borders????
 #counts2 = data.frame(read.csv('figure_panel/set2-counts.csv'))
 
-gcelltype_df = aggregate(counts$Freq, by=list(gcellType=counts$gcellType), FUN=sum)
+gcelltype_df = aggregate(counts$Freq, by=list(gcellType=counts$gcellType2), FUN=sum)
 gcelltype_ord = gcelltype_df$gcellType[order(gcelltype_df$x, decreasing = T)]
-counts$gcellType = factor(counts$gcellType, levels = as.character(gcelltype_ord) ) 
+counts$gcellType2 = factor(counts$gcellType2, levels = as.character(gcelltype_ord) ) 
 #aggregate(counts$Freq, by=list(gcellType=counts$test), FUN=sum)
 
-ggplot(data=counts, aes(x=gcellType, y=Freq, fill=sample_type)) +
+ggplot(data=counts, aes(x=gcellType2, y=Freq, fill=sample_type)) +
   geom_bar(stat="identity")+
   theme_classic()+
   #scale_fill_manual(values = c("pink1", "skyblue1"))+
   scale_fill_manual(values=mycolors)+
   theme(text = element_text(size=15),
         legend.title = element_blank(), axis.text.x = element_text(color='black',size=12, angle=90))+ 
-  xlab('')+ylab('Counts')+
+  xlab('')+ylab('Counts')
   scale_x_discrete(labels = c("Hep","LSEC", "Inf Mac", "Non-Inf\nMac","Stellate", "NK-like\n&T cells"))
   #scale_x_discrete(labels = c("B cell ","Cd3\nT cell","Erythroid","Hep","Inf Mac", "LSEC",
   #                            "Mac\n& DC", "Mature\nB cell","NK cell", "Non-Inf\nMac", "Stellate"))  
   scale_x_discrete(labels = c("Hep","LSEC","Erythroid", "NK cell",  "Mac\n& DC", "Cd3\nT cell",
                               "Inf Mac","Mature\nB cell","Non-Inf\nMac", "Stellate","B cell"))  
 
- 
+###### set-2 updated labels
+set_2_cl_ord = c( "Hep (1)", "Hep (3)", "Hep (9)", "Hep (14)", "Hep (15)", "Hep (0)" , "Hep (2)",  "LSEC (6)" , 
+                  "LSEC (4)", "Stellate (16)", "Non-Inflammatory Mac (8)",   "Non-Inflammatory Mac (13)", 
+                  "Inflammatory Mac (11)",  "gd T cell (7)" , "Naive T cell (10)", "Mature B cell (12)", 
+                  "pDC (17)", "Erythroid (5)")
+#### immune subclustering
+set_2_cl_ord = c("B cell & pDC (7)" , "B cell (3)", "NK-like cell (8)", "NK-like cell (1)" , "gd T cell (12)" , "Cd3 T cell (0)",
+                 "Mac & LSEC (9)"  ,  "Mac & Hep (6)" ,  "Non-Inf Mac (2)" , "Non-Inf Mac (13)" , "Macrophage (11)"  ,
+                 "Inf Mac (5)"  , "Inf Mac (4)", "Inf Mac (10)" ) 
+      
 
-
-
+###### set-1 updated labels
+                          
 ############## Dot plots ###############
 ############### Set-1 ########
 merged_samples2 = merged_samples
@@ -271,11 +360,14 @@ markers = c()
 for(i in 1:nrow(set1_info_ord)) markers = c(markers,matrix[i,])
 markers <- markers[markers!='']
 markers = unname(markers)
-div_num = 53 #64
+div_num = 63 #36#58 #64
 markers_final = unique(c(markers[1:div_num],'Ptprc', 'Cd68', markers[(div_num+1):length(markers)]))
 markers_final = unique(c('Ptprc', 'Cd68',markers))
+markers_final = unique(c('Ptprc', markers[1:div_num], 'Cd68', markers[(div_num+1):length(markers)]))
+
 Idents(merged_samples2) <- factor(df_umap$label, levels = set_2_cl_ord)
-DotPlot(merged_samples2, features = markers_final) + RotatedAxis()+ xlab('Markers')+ylab('')+theme(axis.text.x = element_text(size=11))
+DotPlot(merged_samples2, features = markers_final) + RotatedAxis()+ xlab('Markers')+
+  ylab('')+theme(axis.text.x = element_text(size=12))
 #split.by = "groups"
 
 
@@ -285,6 +377,11 @@ rot_data <- readRDS('Results/new_samples/varimax_rotated_object_new.rds') ## MT-
 rot_data <- readRDS('Results/new_samples/immune_varimax_results.rds') ## set2-immune sub-population
 
 rotatedLoadings <- rot_data$rotLoadings
+Var_5_Load = data.frame(genes=rownames(rotatedLoadings),loading=round(rotatedLoadings[,5],3))
+Var_15_Load = data.frame(genes=rownames(rotatedLoadings),loading=rotatedLoadings[,15])
+
+head(Var_5_Load[order(Var_5_Load$loading, decreasing = T),],10)
+
 scores <- data.frame(rot_data$rotScores)
 colnames(scores) = paste0('Varimax_', 1:ncol(scores))
 embedd_df_rotated <- data.frame(scores)
@@ -296,8 +393,9 @@ rot_df <- data.frame(Varimax_1=embedd_df_rotated$Varimax_1,
                      Library_size=merged_samples$nCount_RNA,
                      num_expressed_genes=merged_samples$nFeature_RNA,
                      strain=merged_samples$strain,
-                     sample_name = merged_samples$sample_name,
-                     label=factor(df_umap$label, levels = as.character(set_1_cl_ord)))
+                     #label=factor(df_umap$label, levels = as.character(set_1_cl_ord)),
+                     sample_name = merged_samples$sample_name
+                     )
 
 ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=cluster))+geom_point(alpha=0.7,size=4)+
   theme_classic()+ylab(paste0('Varimax ',pc_num))+xlab("Varimax 1")+
@@ -324,26 +422,28 @@ ggplot(rot_df, aes(x=label, y=emb_val, fill=strain))+geom_boxplot()+theme_classi
   scale_x_discrete(labels = xlabel2)+xlab('')
 
 
-
-
-
 df_umap$Varimax = abs(rot_df$emb_val)
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=abs(Varimax)))+geom_point(alpha=0.5,size=1)+
-  scale_color_viridis(direction = -1, option = 'inferno',name=paste0("Varimax-", pc_num))+theme_classic()+
+  scale_color_viridis(direction = -1, option = 'inferno',name=paste0("Varimax ", pc_num))+theme_classic()+
   theme(text = element_text(size=22), legend.title=element_text(size=17))
 #+ggtitle(paste0('Varimax ', pc_num, ' scores over set2\nimmune-subclusters UMAP'))
 #'plasma', 'inferno', 'magma'
 
-
-
 ###### strain-specific varimax factors
 
-ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=strain))+geom_point(alpha=0.5,size=3)+
-  theme_classic()+ylab(paste0('Varimax-',pc_num))+xlab("Varimax-1")+
+ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=strain))+geom_point(alpha=0.5,size=1.5)+
+  theme_classic()+ylab(paste0('Varimax_',pc_num))+xlab("Varimax_1")+
   scale_color_manual(values = c("#CC79A7","#0072B2"))+theme_classic()+
-  theme(text = element_text(size=18), legend.title = element_blank())# "#56B4E9"
+  theme(text = element_text(size=16), legend.title = element_blank())# "#56B4E9"
   #+ggtitle(paste0('Distribution of cells based on strain\nover Varimax ', pc_num))
   
+###### strain-specific varimax factors - sample
+
+ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=sample_name))+geom_point(alpha=0.5,size=1.4)+
+  theme_classic()+ylab(paste0('Varimax-',pc_num))+xlab("Varimax-1")+theme_classic()+
+  theme(text = element_text(size=18), legend.title = element_blank())# "#56B4E9"
+#+ggtitle(paste0('Distribution of cells based on strain\nover Varimax ', pc_num))
+
 
 
 data_summary <- function(x) {
@@ -355,7 +455,7 @@ data_summary <- function(x) {
 
 ggplot(rot_df, aes(x=strain, y=emb_val, fill=strain))+geom_boxplot()+theme_classic()+
   scale_fill_manual(values = c("#CC79A7","#0072B2"))+theme_classic()+
-  ylab(paste0('Varimax-', pc_num))+xlab('')+
+  ylab(paste0('Varimax ', pc_num))+xlab('')+
   theme(text = element_text(size=17),axis.text.x = element_text(size=18,color='black'), legend.title = element_blank())+
   stat_summary(fun.data=data_summary)+stat_compare_means(label.x = 0.9, label.y = 3.8, size=5)
 
@@ -523,28 +623,102 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=numGenes))+geom_point(alpha=0.7,si
 ################ gProfiler results
 
 gProfiler.df <- read.csv('figure_panel/gProfiler_csv/set2immune-var4-neg300.csv')
+gProfiler.df <- read.csv('figure_panel/gProfiler_csv/set1-var15-Neg300.csv')
+gProfiler.df <- read.csv('figure_panel/gProfiler_csv/set1-var15-pos300.csv')
+
+gProfiler.df <- read.csv('figure_panel/gProfiler_csv/set1-var5-Neg300.csv')
+gProfiler.df <- read.csv('figure_panel/gProfiler_csv/set1-var5-pos300.csv')
+
 gProfiler.df <- gProfiler.df[,c('term_id','negative_log10_of_adjusted_p_value')]
 colnames(gProfiler.df) = c('term', 'adj_pVal')
 head(gProfiler.df)
 dim(gProfiler.df)
+summary(gProfiler.df$adj_pVal)
+gProfiler.df <- gProfiler.df[1:15,]
 gProfiler.df$term <- factor(gProfiler.df$term, levels=gProfiler.df$term[order(gProfiler.df$adj_pVal)])
-gProfiler.df <- gProfiler.df[1:30,]
+
+
+
+##### visualization of the top TFs 
+ggplot(gProfiler.df, aes(y=adj_pVal, x=term))+
+  geom_bar(stat = "identity", colour = "black", width = 0.9, aes(fill=adj_pVal))+# fill='lightseagreen'
+  # scale_fill_gradientn(name='-log10(p.adj)',low='snow', high='blue')+
+  scale_fill_gradientn(name='-log10(p.adj)',colours=brewer.pal(9,'Purples'),na.value = "transparent", #YlGn
+                       breaks=c(2,4,6,8,10,12,15, 18, 20),
+                       limits=c(1, 21),labels=c(2,'',6,'',10,'',15,'',20))+
+  scale_x_discrete(limits = rev(levels(gProfiler.df$term[1:10])))+
+  scale_y_continuous(limits = c(0, 21))+
+  theme_classic()+
+  theme(axis.text.x = element_text(color = "grey20", size = 15,angle = 90),
+        axis.text.y = element_text(color = "grey20", size = 13),  
+        axis.title.x = element_text(color = "grey20", size = 15),
+        #legend.background = element_rect(fill="grey", size=0.5),
+        axis.title.y = element_text(color = "grey20", size = 15))+
+  ylab('-log10(adjusted p-value)')+
+  xlab(paste0(''))#Transcription Factors
+
+##### visualization of the top TFs - var-5
+ggplot(gProfiler.df, aes(y=adj_pVal, x=term))+
+  geom_bar(stat = "identity", colour = "black", width = 0.9, aes(fill=adj_pVal))+# fill='lightseagreen'
+  # scale_fill_gradientn(name='-log10(p.adj)',low='snow', high='blue')+
+  scale_fill_gradientn(name='-log10(p.adj)',colours=brewer.pal(9,'Purples'),na.value = "transparent", #YlGn
+                       breaks=c(2,4,6,8,10,12,15),
+                       limits=c(1, 15),labels=c(2,'',6,'',10,'',15))+
+  scale_x_discrete(limits = rev(levels(gProfiler.df$term[1:10])))+
+  scale_y_continuous(limits = c(0, 15))+
+  theme_classic()+
+  theme(axis.text.x = element_text(color = "grey20", size = 15,angle = 90),
+        axis.text.y = element_text(color = "grey20", size = 13),  
+        axis.title.x = element_text(color = "grey20", size = 15),
+        #legend.background = element_rect(fill="grey", size=0.5),
+        axis.title.y = element_text(color = "grey20", size = 15))+
+  ylab('-log10(adjusted p-value)')+
+  xlab(paste0(''))#Transcription Factors
+
 
 ggplot(gProfiler.df, aes(y=adj_pVal, x=as.factor(term)))+
   geom_bar(stat = "identity", colour = "black", width = 0.9, aes(fill=adj_pVal))+# fill='lightseagreen'
-  scale_fill_gradient2(name='-log10(p.adj)',low='orange', mid='snow', high='blue')+
+  scale_fill_gradientn(name='-log10(p.adj)',low='snow', high='blue')+
   coord_flip()+theme_classic()+
-  theme(axis.text.x = element_text(color = "grey20", size = 16),
-        axis.text.y = element_text(color = "grey20", size = 16),  
+  theme(axis.text.x = element_text(color = "grey20", size = 15),
+        axis.text.y = element_text(color = "grey20", size = 13),  
         axis.title.x = element_text(color = "grey20", size = 15),
+        #legend.background = element_rect(fill="grey", size=0.5),
         axis.title.y = element_text(color = "grey20", size = 15))+
   ylab('-log10(adjusted p-value)')+
-  xlab(paste0('Enriched TFs based on Varimax-4 top negative genes\n(Set-2 Ptprc+ subpopulation)'))
+  xlab(paste0('Transcription Factors'))
 
 
+brewer.pal(9,'Blues')
+display.brewer.pal(5,'Blues')
+
+
+################################################### ############## 
+############## implementaing a score to order the TF based on it ############## 
+gProfiler.TF.DA <- read.csv('figure_panel/gProfiler_csv/set1-var15-Neg300.csv')
+gProfiler.TF.lew <- read.csv('figure_panel/gProfiler_csv/set1-var15-pos300.csv')
+
+gProfiler.TF.DA <- gProfiler.TF.DA[,c('term_id','negative_log10_of_adjusted_p_value')]
+gProfiler.TF.lew <- gProfiler.TF.lew[,c('term_id','negative_log10_of_adjusted_p_value')]
+
+colnames(gProfiler.TF.DA) = c('term', 'adj_pVal_DA')
+colnames(gProfiler.TF.lew) = c('term', 'adj_pVal_LEW')
+
+gProfiler.TF.lew$LEWscore = gProfiler.TF.lew$adj_pVal_LEW * (nrow(gProfiler.TF.lew):1)/nrow(gProfiler.TF.lew)
+gProfiler.TF.DA$DAscore = gProfiler.TF.DA$adj_pVal_DA * (nrow(gProfiler.TF.DA):1)/nrow(gProfiler.TF.DA)
+
+TF.merged = merge(gProfiler.TF.DA, gProfiler.TF.lew, by.x='term', by.y='term', all.x=T, all.y=T)
+TF.merged2 = TF.merged[,c(1,3,5)]
+TF.merged2[is.na(TF.merged2)] = 0
+TF.merged2$dif = TF.merged2$LEWscore - TF.merged2$DAscore
+TF.merged2.sort = TF.merged2[order(TF.merged2$dif,decreasing = T),]
+
+TF.merged.vis = TF.merged2.sort[,2:3]
+rownames(TF.merged.vis) = TF.merged2.sort$term
+TF.merged.vis[TF.merged.vis==0]=NA
+colnames(TF.merged.vis) = c('DA', 'LEW')
+pheatmap(t(TF.merged.vis),cluster_rows = F, cluster_cols = F, color=inferno(40,direction = -1), fontsize_row  = 13, fontsize_col  = 10)
 # set1-var15Pos-chea
-
-
 
 
 #####################################
@@ -631,6 +805,7 @@ gridExtra::grid.arrange(p1,p2,p4,nrow=1,ncol=3)
 
 
 
+
 a_gene_set_name <- 'STAT4' # 'HNF4A' # GATA1
 query_genesets = names(geneSets)[grepl(pattern = a_gene_set_name, names(geneSets),ignore.case = T)]
 
@@ -641,6 +816,168 @@ scores_2$strain = sapply(strsplit(high_score_cells,'_'), function(x) x[2])
 head(scores_2)
 
 ggplot(scores_2, aes(y=STAT4_TH1_Mouse_UCell, x=strain))+geom_boxplot(aes(fill=strain))+scale_fill_brewer(palette = 'Dark2')+stat_compare_means()
+
+
+
+########## evaluating the DA and LEW redundant gene sets enrichment in each
+
+var_file = 'set1-var15-pos300'
+gProfiler.df <- read.csv(paste0('figure_panel/gProfiler_csv/',var_file,'.csv'))
+
+num_sets = nrow(gProfiler.df)
+if(nrow(gProfiler.df)>25) num_sets = 15
+
+candidateGenes.df.list = sapply(1:num_sets, function(i){
+  candidateGenes = unlist(str_split(gProfiler.df$intersections[i], pattern = ','))
+  candidateGenes.df = .getMapped_hs2model_df(ensembl, candidateGenes, model_animal_name)
+  return(candidateGenes.df)
+  },simplify = F
+)
+names(candidateGenes.df.list) = term_id_vec[num_sets]
+
+pdf(paste0('figure_panel/gProfiler_csv/',var_file,'-uniqueGenes.pdf'))
+for(i in 1:num_sets){
+  print(i)
+  term_id_vec = gProfiler.df$term_id[i]
+  candidateGenes.df = candidateGenes.df.list[[i]]
+  candidateGenes.rat = candidateGenes.df$rnorvegicus_homolog_associated_gene_name[candidateGenes.df$rnorvegicus_homolog_orthology_type == 'ortholog_one2one' & 
+                                                                                    !is.na(candidateGenes.df$rnorvegicus_homolog_orthology_type)]
+  
+  # candidateGenes.rat = .getMapped_hs2model_df(ensembl,pos_specific, model_animal_name)
+  scores_2 <- data.frame(ScoreSignatures_UCell(my.matrix_sub, features= list(sig=c(unique(candidateGenes.rat)))))
+  scores_2$strain = sapply(strsplit(high_score_cells,'_'), '[[', 2)
+ 
+  p=ggplot(scores_2, aes(y=sig_UCell, x=strain))+geom_boxplot(aes(fill=strain))+
+    scale_fill_brewer(palette = 'Dark2')+stat_compare_means()+ggtitle(paste0(term_id_vec, ' ', var_file))
+  print(p)
+}
+dev.off()
+
+
+
+
+
+#### check which gene-sets are enriched in both ways and identify the genes that are inconsitent between them
+
+geneSets.var5.neg <- read.csv('figure_panel/gProfiler_csv/set1-var5-Neg300.csv')
+geneSets.var5.pos <- read.csv('figure_panel/gProfiler_csv/set1-var5-pos300.csv')
+
+geneSets.var15.neg <- read.csv('figure_panel/gProfiler_csv/set1-var15-Neg300.csv')
+geneSets.var15.pos <- read.csv('figure_panel/gProfiler_csv/set1-var15-pos300.csv')
+
+head(geneSets.var15.neg$term_id)
+head(geneSets.var15.pos$term_id)
+
+geneSets.var15.neg$term_id[1:15][!geneSets.var15.neg$term_id[1:15] %in% geneSets.var15.pos$term_id]
+geneSets.var15.pos$term_id[1:15][!geneSets.var15.pos$term_id[1:15] %in% geneSets.var15.neg$term_id]
+
+top_num = 20
+same.geneset = geneSets.var15.neg$term_id[geneSets.var15.neg$term_id %in% geneSets.var15.pos$term_id]
+same.geneset.top20 = geneSets.var15.neg$term_id[1:top_num][geneSets.var15.neg$term_id[1:top_num] %in% geneSets.var15.pos$term_id[1:top_num]]
+
+# top 10: "SPI1"  "MECOM" "FLI1"  "TAL1"  "MYB"  
+# top 20: "SPI1"  "RUNX1" "MECOM" "FLI1"  "TAL1"  "MYB"   "EGR1"  "RELA"  "CUX1" 
+# top 30: "SPI1"  "RUNX1" "MECOM" "MITF"  "FLI1"  "TAL1"  "MYB"   "EGR1"  "RELA"  
+###       "PPARG" "KLF1"  "GATA2" "CUX1"  "E2F1"  "CLOCK" "SOX2"  "STAT3" "STAT4" "CEBPB" "LMO2"  "DMRT1"
+
+i = 1
+same.geneset.top20[i]
+
+genes.neg = geneSets.var15.neg$intersections[which(geneSets.var15.neg$term_id == same.geneset.top20[i])]
+genes.pos = geneSets.var15.pos$intersections[which(geneSets.var15.pos$term_id == same.geneset.top20[i])]
+genes.neg = unlist(str_split(genes.neg, ','))
+genes.pos = unlist(str_split(genes.pos, ','))
+neg_specific  = genes.neg[!genes.neg %in% genes.pos]
+pos_specific  = genes.pos[!genes.pos %in% genes.neg]
+
+var15.pos_specific.orth = .getMapped_hs2model_df(ensembl, pos_specific, model_animal_name)
+var15.pos_specific.orth.genes = getUnemptyList(var15.pos_specific.orth$rnorvegicus_homolog_associated_gene_name)
+
+var15.neg_specific.orth = .getMapped_hs2model_df(ensembl, neg_specific, model_animal_name)
+var15.neg_specific.orth.genes = getUnemptyList(var15.neg_specific.orth$rnorvegicus_homolog_associated_gene_name)
+
+pdf('Plots/var15.SPI1_pos_specific.orth.pdf')
+for(i in 1:nrow(var15.pos_specific.orth)){
+  gene2test = var15.pos_specific.orth.genes[i]
+  if(!gene2test %in% rownames(my.matrix_sub)) next
+  geneTest.df=data.frame(geneExp=my.matrix_sub[gene2test,],strain = sapply(strsplit(high_score_cells,'_'), '[[', 2))
+  p=ggplot(geneTest.df, aes(x=strain,y=geneExp))+geom_boxplot()+ggtitle(gene2test)
+  print(p)
+}
+dev.off()
+
+pdf('Plots/var15.SPI1_neg_specific.orth.pdf')
+for(i in 1:nrow(var15.neg_specific.orth)){
+  gene2test = var15.neg_specific.orth.genes[i]
+  if(!gene2test %in% rownames(my.matrix_sub)) next
+  geneTest.df=data.frame(geneExp=my.matrix_sub[gene2test,],
+                         strain = sapply(strsplit(high_score_cells,'_'), '[[', 2))
+  p=ggplot(geneTest.df, aes(x=strain,y=geneExp))+geom_boxplot()+ggtitle(gene2test)
+  print(p)
+}
+dev.off()
+
+
+###### checking if the genes are redundant
+var_num= 15 
+varimax_res_set1 <- readRDS('Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds')
+var.load.df = data.frame(genes=rownames(varimax_res_set1$rotLoadings),
+                         loading=varimax_res_set1$rotLoadings[,var_num])
+var.load.df = var.load.df[order(var.load.df$loading, decreasing = T),]
+head(var.load.df)
+var15.pos300_genes = var.load.df$genes[1:300]
+var15.neg300_genes = var.load.df$genes[nrow(var.load.df):(nrow(var.load.df)-300)]
+
+sum(var15.pos300_genes %in% var15.neg300_genes)
+
+
+
+###########################
+###### Generating the total QC plot
+
+#### new syncronized thresholds: 
+MIT_CUT_OFF = 40
+LIB_SIZE_CUT_OFF = 1500
+NUM_GENES_DETECTED = 250
+
+###### 
+input_from_10x = paste0("Data/",c('rat_DA_M_10WK_003','rat_DA_01_reseq','rat_Lew_01', 'rat_Lew_02'),'/')
+seur_raw <- lapply(input_from_10x, function(an_input_from_10x) CreateSeuratObject(counts=Read10X(an_input_from_10x, gene.column = 2),
+                                          min.cells=0,min.features=1, 
+                                          project = "snRNAseq"))
+
+seur_raw.merge = merge(seur_raw[[1]], c(seur_raw[[2]], seur_raw[[3]], seur_raw[[4]]), # 
+      add.cell.ids = c('rat_DA_M_10WK_003','rat_DA_01_reseq','rat_Lew_01', 'rat_Lew_02'), 
+      project = "rat_data", 
+      merge.data = TRUE)
+dim(seur_raw.merge)
+rm(list=ls())
+
+seur_genes_df <- read.delim(paste0(input_from_10x[1],'features.tsv.gz'), header = F)
+seur_raw.merge[['RNA']] <- AddMetaData(seur_raw.merge[['RNA']], seur_genes_df$V2, col.name = 'symbol')
+seur_raw.merge[['RNA']] <- AddMetaData(seur_raw.merge[['RNA']], seur_genes_df$V1, col.name = 'ensembl')
+
+MIT_PATTERN = '^Mt-'
+mito_genes_index <- grep(pattern = MIT_PATTERN, seur_raw.merge[['RNA']]@meta.features$symbol )
+seur_raw.merge[['RNA']]@meta.features$symbol[mito_genes_index]
+seur_raw.merge[["mito_perc"]] <- PercentageFeatureSet(seur_raw.merge, features = mito_genes_index)
+summary(seur_raw.merge[["mito_perc"]]$mito_perc )
+libSize <- colSums(GetAssayData(seur_raw.merge@assays$RNA))
+
+seur_raw = seur_raw.merge 
+df = data.frame(library_size= seur_raw$nCount_RNA, 
+                mito_perc=seur_raw$mito_perc , 
+                n_expressed=seur_raw$nFeature_RNA)
+
+
+## Visualization of QC metrics
+ggplot(df, aes(x=library_size, y=mito_perc, color=n_expressed))+geom_point(alpha=0.7)+
+  scale_color_viridis(name='#expressed\ngenes')+
+  theme_classic()+xlab('Library Size')+ylab('Mitochondrial transcript percent')+
+  geom_hline(yintercept= MIT_CUT_OFF, linetype="dashed", color = "red")+
+  geom_vline(xintercept = LIB_SIZE_CUT_OFF, linetype="dashed", color = "red3", size=0.5)+
+  theme(text = element_text(size=16))
+
 
 
 

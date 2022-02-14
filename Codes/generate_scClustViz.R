@@ -198,7 +198,7 @@ gridExtra::grid.table(df)
 
 runShiny(
   ## write the path to the file bellow:
-  filePath= new_data_scCLustViz_object,
+  filePath= new_data_scCLustViz_object_Immune,
   
   outPath="./",
   # Save any further analysis performed in the app to the

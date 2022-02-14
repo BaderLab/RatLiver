@@ -1,0 +1,19 @@
+clusters,Annotation,label,Top Genes,Other Genes,,,,,,
+0,Hepatocyte (Interzonal),Hep (0),Ttr,Apoc1,Apoc3,Cyb5a,Dbi,Alb,,
+1,Hepatocyte (More Periportal),Hep (1),Fgg,Fgb,Itih4,C3,Cps1,Alb,,
+2,Hepatocyte (More Pericentral),Hep (2),Scd,Acsl1,Cps1,Pck1,Cyp4a2,Alb,,
+3,Hepatocyte (More Periportal),Hep (3),Apoa2,Spink1l,Fgg,Itih4,Hp,Alb,,
+4,LSEC (Both Central & Portal),LSEC (4),Fcgr2b,Lyve1,Sparc,Fam167b,Eng,Id3,Clec14a,Igfbp7
+5,Erythroid Cells,Erythroid (5),Alas2,Ubb,Hbb,Ybx3,Lgals5,Bpgm,Prdx2,Mkrn1
+6,LSEC (Mostly Central Venous),LSEC (6),Sparc,Lyve1,Vwf,Cavin2,Ifitm3,,,
+7,gd T cell,gd T cell (7),Gzmk,Gzma,Xcl1,Nkg7,Klrd1,Cd7,Tyrobp,Plac8
+8,Macrophage & DC markers*,Non-Inflammatory Mac (8),Eng,Xcr1,Clec9a,Siglec1,Tlr2,Cd68
+9,Hepatocyte (More Periportal),Hep (9),Pck1,Apoe,C3,Hp,Vtn,Itih3,Alb,
+10,Naive T cell,Naive T cell (10),Rps3,Cd3g,Cd3e,Coro1a,Cd3d,Btg1,,
+11,Inflammatory Macrophage,Inflammatory Mac (11),S100a8,S100a9,Cd74,Ctsa,Lyz2,RT1-Db1,Rt1-da,Slp1
+12,Mature B Cell,Mature B cell (12),Cd74,Cd79b,Fcmr,Ighm,Irf8,,Tyrobp,Plac8
+13,Non Inflammatory Macrophage,Non-Inflammatory Mac (13),Marco,Vsig4,Cd5l,Hmox1,Cd163,C1qa,C1qb,Clec4f
+14,Hepatocyte (More Periportal),Hep (14),Apoe,Hp,Serpina1,Gc,C3,Apoa2,Alb,
+15,Hepatocyte (More Periportal),Hep (15),Insig1,Igfbp1,Itih3,Zfp36l1,Alb,,,
+16,Hepatic Stellate Cell,Stellate (16),Col3a1,Ecm1,Igfbp3,Colec11,Sparc,Colec10,,
+17,plasmacytoid DC,pDC (17),Irf8,Plac8,Cd74,Crip1,Tmsb10,Lgals1,Tyrobp,Plac8

@@ -1,0 +1,9 @@
+Clusters,Annotation,label,Top Genes,Other Genes,,,,,
+0,Central Venous LSECs & Portal Endothelial Cells,Endothelial (0),Ctsl,Fcgr2b,Eng,Lyve1,Id3,Ramp2,Plpp1
+1,Hepatocyte,Hep (1),Alb,Ttr,Apoa2,Tf,Apoc1,,
+2,Central Venous LSEC,cvLSEC (2),Lyve1,Fcgr2b,Plpp3,Bmp2,Eng,,
+3,gd T Cell,gd T Cell (3),Ccl5,Stmn1,Hmgb2,Gzma,Hmgb2,Tagln2,
+4,Periportal Hepatocyte,ppHep (4),Alb,Pck1,Apoc3,Hmgcs1,Cps1,Arg1,
+5,Hepatic Stellate Cell,Stellate (5),Col3a1,Ecm1,Colec11,Colec10,Bgn,,
+6,Non Inf Macrophages,Non-Inf Mac (6),Cd69,C1qa,Clec4f,Cd5l,Vsig4,Marco,
+7,Cholangiocytes,Cholangiocytes (7),Lgals1,Krt8,Fxyd3,Plpp1,Aqp1,Bicc1,

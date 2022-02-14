@@ -11,6 +11,14 @@ library(tidyr)
 rat_new_cluster_average_exp_df <- readRDS('Results/rat_new_cluster_average_exp_all.rds')
 rat_old_cluster_average_exp_df <- readRDS('Results/rat_old_cluster_average_exp_all.rds')
 
+colnames(rat_new_cluster_average_exp_df)
+colnames_set2 = c("pDC (17)", "Naive T cell (10)", "Erythroid (5)", "Hep (0)" , "Hep (1)", "Hep (14)",
+                  "Hep (15)", "Hep (2)", "Hep (3)", "Hep (9)", "Inflammatory Mac (11)", "LSEC (4)",
+                  "LSEC (6)", "Non-Inflammatory Mac (8)", "Mature B cell (12)", "gd T cell (7)", 
+                  "Non-Inflammatory Mac (13)", "Stellate (16)", "rat_ID" )
+colnames(rat_new_cluster_average_exp_df) = colnames_set2
+
+
 ##### filtering based on highly variable genes
 set2_HVGs = readRDS('Results/set2_rat_HVGs.rds')
 set1_HVGs = readRDS('Results/set1_rat_HVGs.rds')
@@ -34,7 +42,7 @@ rat_old_cluster_average_exp_df = rat_old_cluster_average_exp_df[set1_markers,]
 rat_new_cluster_average_exp_df = rat_new_cluster_average_exp_df[set2_markers,]
 dim(rat_new_cluster_average_exp_df)
 
-num_PCs = 35
+num_PCs = 30
 #### loading varimax factors
 varimax_res_set1 <- readRDS('Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds')
 score_set1 <- data.frame(varimax_res_set1$rotScores)
@@ -47,9 +55,12 @@ merged_old = merge(rat_old_cluster_average_exp_df,loading_set1[,c(1:num_PCs,ncol
 dim(merged_old)
 merged_old_cor = cor(merged_old[,-1])
 cluster_num = ncol(rat_old_cluster_average_exp_df) -1
-pheatmap(merged_old_cor[1:cluster_num, (cluster_num+1):ncol(merged_old_cor)],
-         cluster_cols = F, 
-         main = paste0('set1-Top ',num_DE_genes,' marker cluster-varimax correlation')) #2000HGV
+tovisMat = merged_old_cor[1:cluster_num, (cluster_num+1):ncol(merged_old_cor)]
+colnames(tovisMat) = paste0('Var_', 1:ncol(tovisMat))
+pheatmap(tovisMat,
+         cluster_cols = F, fontsize = 11,  clustering_method='ward.D'
+         #main = paste0('set1-Top ',num_DE_genes, ,' marker cluster-varimax correlation')
+         ) #2000HGV
 
 
 
@@ -64,9 +75,12 @@ merged_new = merge(rat_new_cluster_average_exp_df,loading_set2[,c(1:num_PCs,ncol
 dim(merged_new)
 merged_new_cor = cor(scale(merged_new[,-1]))
 cluster_num = ncol(rat_new_cluster_average_exp_df) -1
-pheatmap(merged_new_cor[1:cluster_num, (cluster_num+1):ncol(merged_new_cor)],
-         cluster_cols = F, 
-         main = paste0('set2-Top ',num_DE_genes,' marker cluster-varimax correlation'))
+tovisMat = merged_new_cor[1:cluster_num, (cluster_num+1):ncol(merged_new_cor)]
+colnames(tovisMat) = paste0('Var_', 1:ncol(tovisMat))
+pheatmap(tovisMat,fontsize = 12,
+         #main = paste0('set2-Top ',num_DE_genes,' marker cluster-varimax correlation'),
+         cluster_cols = F 
+         )
 
 
 

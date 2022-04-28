@@ -29,7 +29,17 @@ ggplot(umap_df,aes(x= UMAP_1, y= UMAP_2, color=subclusters))+geom_point()+
   theme_classic()+ggtitle(cluster_name)
 
 
+#### subclustering set1 mesenchymal cells ####
+old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
+load(old_data_scClustViz_object)
 
+#### the new immune subcluster data ####
+merged_samples <- your_scRNAseq_data_object
+merged_samples$final_cluster = as.character(sCVdata_list$res.0.6@Clusters)
+cluster_name = c('7', '14')
+merged_samples$sample_name = ifelse(merged_samples$orig.ident=='rat_DA_01_reseq', 'DA-1', 
+                                    ifelse(merged_samples$orig.ident=='rat_DA_M_10WK_003', 'DA-2',
+                                           ifelse(merged_samples$orig.ident=='rat_Lew_01', 'Lew-1', 'Lew-2')))
 
 
 ### constructing a subset the input seurat object
@@ -64,6 +74,7 @@ seur <- RunPCA(seur,verbose=T, features=rownames(seur))
 plot(100 * seur@reductions$pca@stdev^2 / seur@reductions$pca@misc$total.variance,
      pch=20,xlab="Principal Component",ylab="% variance explained",log="y")
 PC_NUMBER = 20
+PC_NUMBER = 15
 
 ### Harmony
 #seur <- RunHarmony(seur, "sample_type",assay.use="RNA")
@@ -74,11 +85,11 @@ seur <- RunTSNE(seur,dims=1:PC_NUMBER, reduction="harmony")
 
 max_seurat_resolution <- 2.5 ## change this to higher values
 FDRthresh <- 0.01 # FDR threshold for statistical tests
-min_num_DE <- 1
+min_num_DE <- 10
 seurat_resolution <- 0 # Starting resolution is this plus the jump value below.
 seurat_resolution_jump <- 0.2
 
-DefaultAssay(seur) = 'RNA' # why? shouldn't the data be normalized first? 
+DefaultAssay(seur) = 'SCT' #'RNA' # why? shouldn't the data be normalized first? 
 seur <- FindNeighbors(seur,reduction="harmony",dims=1:PC_NUMBER,verbose=F)
 
 
@@ -144,7 +155,13 @@ while(DE_bw_clust) {
   sCVdata_list[[paste0("res.",seurat_resolution)]] <- curr_sCVdata
 }
 
+
+
 saveRDS(seur, 'Results/new_samples/Immune_subclusters_c17Included.rds')
+saveRDS(seur, 'Results/old_samples/Mesenchymal_subclusters.rds')
+saveRDS(sCVdata_list, 'Results/old_samples/Mesenchymal_subclusters_sCVdata_list.rds')
+
+
 new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub_c17Included.RData"
 save(seur,sCVdata_list,file=new_data_scCLustViz_object_Immune)
 

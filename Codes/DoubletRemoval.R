@@ -4,36 +4,52 @@ library(scDblFinder)
 library(BiocParallel)
 set.seed(123)
 
-new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved.RData"
+############
+new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_labelCor.RData"
+old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
+
 load(new_data_scCLustViz_object)
+load(old_data_scClustViz_object)
+
 merged_samples = your_scRNAseq_data_object
+
 merged_samples$strain = sapply(str_split(colnames(merged_samples), '_'), '[[', 2)
-### flipping the sample tag
-merged_samples$strain = ifelse(merged_samples$strain == 'DA', 'LEW', 'DA')
-umi_only = sapply(str_split(colnames(merged_samples), '_'), '[[', 6)
-umi_sample_info = ifelse(merged_samples$strain == "DA", 'rat_DA_M09_WK_008_', 'rat_LEW_M09_WK_009_')
-#colnames(merged_samples) = paste0(umi_sample_info, umi_only)
-selected_UMIs = paste0(umi_sample_info, umi_only)
+merged_samples$sample_name = ifelse(merged_samples$orig.ident=='rat_DA_01_reseq', 'DA-1', 
+                                    ifelse(merged_samples$orig.ident=='rat_DA_M_10WK_003', 'DA-2',
+                                           ifelse(merged_samples$orig.ident=='rat_Lew_01', 'Lew-1', 'Lew-2')))
 
-colnames(your_scRNAseq_data_object)
-seur_DA <- CreateSeuratObject(counts=Read10X('Data/rat_DA_M09_WK_008_3pr_v3/', gene.column = 2),
-                               min.cells=0,min.features=1, project = "snRNAseq")
+selected_UMIs = colnames(merged_samples)
 
-seur_LEW <- CreateSeuratObject(counts=Read10X('Data/rat_LEW_M09_WK_009_3pr_v3/', gene.column = 2),
-                              min.cells=0,min.features=1, project = "snRNAseq")
+######### importing the new samples raw data
+seur_DA <- CreateSeuratObject(counts=Read10X('Data/rat_DA_M09_WK_008_3pr_v3/', gene.column = 2),min.cells=0,min.features=1, project = "snRNAseq")
+seur_LEW <- CreateSeuratObject(counts=Read10X('Data/rat_LEW_M09_WK_009_3pr_v3/', gene.column = 2),min.cells=0,min.features=1, project = "snRNAseq")
 
 seur_merged = merge(seur_DA, seur_LEW, add.cell.ids = c('rat_DA_M09_WK_008', 'rat_LEW_M09_WK_009'), 
       project = "rat_data", merge.data = TRUE)
 
+###########################
+######### importing the old samples raw data
 
-paste0(umi_sample_info, umi_only) %in% colnames(seur_merged)
+seur_DA_1 <- CreateSeuratObject(counts=Read10X('Data/rat_DA_01_reseq/', gene.column = 2), min.cells=0,min.features=1, project = "snRNAseq")
+seur_DA_2 = CreateSeuratObject(counts=Read10X('Data/rat_DA_M_10WK_003/', gene.column = 2), min.cells=0,min.features=1, project = "snRNAseq")
+seur_LEW_1 <- CreateSeuratObject(counts=Read10X('Data/rat_Lew_01/', gene.column = 2), min.cells=0,min.features=1, project = "snRNAseq")
+seur_LEW_2 <- CreateSeuratObject(counts=Read10X('Data/rat_Lew_02/', gene.column = 2), min.cells=0,min.features=1, project = "snRNAseq")
+
+seur_merged = merge(seur_DA_1, c(seur_DA_2, seur_LEW_1, seur_LEW_2), 
+                    add.cell.ids = c('rat_DA_01_reseq', 'rat_DA_M_10WK_003', 'rat_Lew_01', 'rat_Lew_02'), 
+                    project = "rat_data", merge.data = TRUE)
+###########################
+
+#### all the cell names in the merged_samples (after filter) need to be included in the seur_merged object
+sum(!colnames(merged_samples) %in% colnames(seur_merged))
 seur_mergedSub = seur_merged[,colnames(seur_merged) %in% selected_UMIs]
-
+dim(seur_mergedSub)
 
 sce = GetAssayData(seur_mergedSub)
 sce <- scDblFinder(sce, 
-                   samples=sapply(str_split(colnames(seur_mergedSub), '_'), '[[', 2), 
-                   BPPARAM=MulticoreParam(3))
+                   samples=sapply(str_split(colnames(seur_mergedSub), '_'), function(x) paste(x[-length(x)],collapse = '_')), 
+                   BPPARAM=MulticoreParam(detectCores()-2))
+
 table(sce$scDblFinder.class)
 doublet_df = data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1],
                         UMAP_2=getEmb(merged_samples, 'umap')[,2],
@@ -42,6 +58,10 @@ doublet_df = data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1],
 ggplot2::ggplot(doublet_df, aes(UMAP_1, UMAP_2, color=db))+geom_point(alpha=0.5,size=1)+theme_classic()+
   scale_color_manual(values = c('red', 'grey86'))+
   theme(text = element_text(size=15),legend.title = element_blank())#
+
+####################################################################################
+##################### Running soupX using the raw merged and sub-file 
+soupx_c = SoupChannel(tod=seur_merged, toc=seur_mergedSub, calcSoupProfile=T)
 
 
 load("Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub_c17Included.RData")

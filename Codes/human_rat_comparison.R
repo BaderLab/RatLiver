@@ -272,9 +272,9 @@ set1_HVGs == set2_HVGs
 #######################################
 
 
-colnames_set2 = c("pDC (17)", "Naive T cell (10)", "Erythroid (5)", "Hep (0)" , "Hep (1)", "Hep (14)",
+colnames_set2 = c("pDC (17)", "\u03B1\u03B2 T cell (10)", "Erythroid (5)", "Hep (0)" , "Hep (1)", "Hep (14)",
                   "Hep (15)", "Hep (2)", "Hep (3)", "Hep (9)", "Inflammatory Mac (11)", "LSEC (4)",
-                  "LSEC (6)", "Non-Inflammatory Mac (8)", "Mature B cell (12)", "gd T cell (7)", 
+                  "LSEC (6)", "Non-Inflammatory Mac (8)", "Mature B cell (12)", "\u03B3\u03B4 T cell (7)", 
                   "Non-Inflammatory Mac (13)", "Stellate (16)", "rat_ID" )
 
 rat_new_cluster_average_exp_df = readRDS('Results/rat_new_cluster_average_exp_all.rds')
@@ -307,7 +307,7 @@ colnames(rat_cor_mat) = gsub('\\-s2', '', gsub('\\-s1', '', colnames(rat_cor_mat
 colnames(rat_cor_mat) <- gsub('Inflammatory', 'Inf', colnames(rat_cor_mat))
 rownames(rat_cor_mat) = colnames(rat_cor_mat)
 rat_cor_mat = rat_cor_mat[1:17,18:ncol(rat_cor_mat)]
-pheatmap(rat_cor_mat,color = inferno(20),  clustering_method='ward.D2')
+pheatmap(rat_cor_mat,color = inferno(20),  clustering_method='ward.D')
 
 
 phm =pheatmap(rat_cor_mat,color = inferno(20),  clustering_method='ward.D') # the first 20 clusters are for human map

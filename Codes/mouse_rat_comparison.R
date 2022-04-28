@@ -92,9 +92,10 @@ rat_old_cluster_average_exp_df <- readRDS('Results/rat_old_cluster_average_exp_a
 
 
 ##### updating the cell-type annotations of set2
-colnames_set2 = c("pDC (17)", "Naive T cell (10)", "Erythroid (5)", "Hep (0)" , "Hep (1)", "Hep (14)",
+
+colnames_set2 = c("pDC (17)", "\u03B1\u03B2 T cell (10)", "Erythroid (5)", "Hep (0)" , "Hep (1)", "Hep (14)",
                   "Hep (15)", "Hep (2)", "Hep (3)", "Hep (9)", "Inflammatory Mac (11)", "LSEC (4)",
-                  "LSEC (6)", "Non-Inflammatory Mac (8)", "Mature B cell (12)", "gd T cell (7)", 
+                  "LSEC (6)", "Non-Inflammatory Mac (8)", "Mature B cell (12)", "\u03B3\u03B4 T cell (7)", 
                   "Non-Inflammatory Mac (13)", "Stellate (16)", "rat_ID" )
 colnames(rat_new_cluster_average_exp_df) = colnames_set2
 

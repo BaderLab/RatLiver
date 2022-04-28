@@ -35,8 +35,6 @@ colnames(assay_data) == colnames(merged_samples)
 colnames(assay_data) == corrected_UMIs
 
 
-
-
 ##### removing the mitochondrial genes to eliminate their effect on clustering #####
 MIT_PATTERN = '^Mt-'
 mito_genes_index <- grep(pattern = MIT_PATTERN, row.names(merged_samples) )
@@ -196,9 +194,11 @@ gridExtra::grid.table(df)
 ####################
 
 
+
+
 runShiny(
   ## write the path to the file bellow:
-  filePath= new_data_scCLustViz_object_Immune,
+  filePath= new_data_scCLustViz_object,
   
   outPath="./",
   # Save any further analysis performed in the app to the

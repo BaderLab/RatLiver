@@ -4,10 +4,13 @@ Initialize()
 library(plyr)
 library(stats)
 library(ggpubr)
-
 library(RColorBrewer)
 library(viridis)
 library(scales)
+
+
+### strain gene figures are in the consistent_strain_gene.R
+#### varimax-cluster correlations in the varimax_cluster_cor.R script
 
 ############
 new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_labelCor.RData"
@@ -40,6 +43,23 @@ merged_samples$strain = sapply(str_split(colnames(merged_samples), '_'), '[[', 2
 
 merged_samples$EndoSub = ifelse(colnames(merged_samples) %in% 
                                     colnames(your_scRNAseq_data_object), 'Endothelial\ncells', 'other')
+
+
+cell_info_df = data.frame(merged_samples@meta.data, cell_id=colnames(merged_samples)) 
+saveRDS(cell_info_df, 'Results/old_samples/MT_info/cell_info_df.rds')
+
+######################################
+############## Checking QC variables 
+######################################
+table(merged_samples$sample_name)
+sample_name = 'LEW'
+a_sample = merged_samples[,merged_samples$sample_name==sample_name]
+
+ncol(a_sample)
+### N genes per sample
+sum(rowSums(a_sample) > 0 )
+#### mmedian number of expressed genes per cell
+median(colSums(GetAssayData(a_sample)>0))
 
 #############################################################################
 ####### Evaluating the number of Ptprc+ cells in set-1 map vs set2 ##########
@@ -86,13 +106,14 @@ set1_info <- read.csv('figure_panel/set-2-final-info-updated.csv')
 set1_info <- read.csv('figure_panel/set-2-Endosub-final-info.csv')
 set1_info <- read.csv('figure_panel/set-2-immunesub-final-info-updated.csv')
 colnames(set1_info)[1] = 'clusters'
+set1_info$Annotation = gsub(pattern = 'Naive', replacement ='ab' ,set1_info$Annotation)
 #set1_info <- set1_info[1:18,] # 14
 set1_info$clusters = as.character(set1_info$clusters)
 df_umap = merge(df_umap, set1_info[,1:3], by.x='clusters', by.y='clusters', all.x=T, order=F)
 #### re-ordering the rows based on UMIs of the initial data
 df_umap <- df_umap[match(colnames(merged_samples),df_umap$umi),]
 df_umap$umi == colnames(merged_samples)
-
+sum(df_umap$umi != colnames(merged_samples))
 
 colorBlindGrey8   <- c("#999999", "#E69F00", "#56B4E9", "#009E73", 
                        "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
@@ -118,6 +139,7 @@ show_col(c('#6699CC', '#5684E9', '#0072B2', '#332288'))
 c('#E41A1C')
 
 show_col(c('#999999', 'black'))
+#### Set1 map
 mycolors2 = c(c('#F781BF','#D36E7C' , '#9E5198','#882255','#661100','#AA4499',   '#984560','pink2','#5E3C99'),
               '#117733' ,
               '#FFE729','#FFAF13', 
@@ -155,10 +177,20 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=label))+geom_point(alpha=0.7, size
   theme_classic()+scale_color_manual(name='clusters',values = mycolors2)+
   theme(text = element_text(size=15),legend.title = element_blank())#
 
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=label))+geom_point(alpha=1, size=3)+
+  theme_classic()+scale_color_manual(name='clusters',values = mycolors2)+
+  theme(text = element_text(size=15),legend.title = element_blank())#
+
 df_umap$label_hep <- ifelse(substr(df_umap$label, 1, 3)=='Hep', df_umap$label, 'Other')
 df_umap$label_lsec <- ifelse(substr(df_umap$label, 1, 4)=='LSEC', df_umap$label, 'Other')
 df_umap$label_stellate <- ifelse(substr(df_umap$label, 1, 8)=='Stellate', df_umap$label, 'Other')
 df_umap$label_nonInfMac <- ifelse(substr(df_umap$label, 1, 7)=='Non-Inf', df_umap$label, 'Other')
+
+
+#### calculating the percentage of Heps 
+num_hep_clust = length(table(df_umap$label_hep))-1
+round(sum(table(df_umap$label_hep)[1:num_hep_clust])/sum(table(df_umap$label_hep)),4)* 100
+
 
 names(table(df_umap$label))
 head(df_umap)
@@ -302,9 +334,9 @@ ggplot(data=counts_norm, aes(x=cluster2, y=Freq, fill=sample_type)) +
   ylab('Fraction of sample per cell type (%)')+
   #scale_fill_manual(values = c("#E69F00", "#009E73"))+
   #scale_fill_brewer(palette = "Set3")+
-  scale_fill_manual(values=mycolors)+
+  #scale_fill_manual(values=mycolors)+
   #scale_x_discrete(labels = immune_sub_labels) #scales::wrap_format(9)
-  #scale_fill_manual(values = c("pink1", "skyblue1"))+
+  scale_fill_manual(values = c("pink1", "skyblue1"))+
   theme(text = element_text(size=15),
         axis.text.x = element_text(size=12.5,angle=90,color='black'),
         legend.title = element_blank()) +  
@@ -326,12 +358,12 @@ counts$gcellType2 = factor(counts$gcellType2, levels = as.character(gcelltype_or
 ggplot(data=counts, aes(x=gcellType2, y=Freq, fill=sample_type)) +
   geom_bar(stat="identity")+
   theme_classic()+
-  #scale_fill_manual(values = c("pink1", "skyblue1"))+
-  scale_fill_manual(values=mycolors)+
+  scale_fill_manual(values = c("pink1", "skyblue1"))+
+  #scale_fill_manual(values=mycolors)+
   theme(text = element_text(size=15),
         legend.title = element_blank(), axis.text.x = element_text(color='black',size=12, angle=90))+ 
   xlab('')+ylab('Counts')
-  scale_x_discrete(labels = c("Hep","LSEC", "Inf Mac", "Non-Inf\nMac","Stellate", "NK-like\n&T cells"))
+  #scale_x_discrete(labels = c("Hep","LSEC", "Inf Mac", "Non-Inf\nMac","Stellate", "NK-like\n&T cells"))
   #scale_x_discrete(labels = c("B cell ","Cd3\nT cell","Erythroid","Hep","Inf Mac", "LSEC",
   #                            "Mac\n& DC", "Mature\nB cell","NK cell", "Non-Inf\nMac", "Stellate"))  
   scale_x_discrete(labels = c("Hep","LSEC","Erythroid", "NK cell",  "Mac\n& DC", "Cd3\nT cell",
@@ -349,18 +381,18 @@ set_2_cl_ord = c("B cell & pDC (7)" , "B cell (3)", "NK-like cell (8)", "NK-like
       
 
 ###### set-1 updated labels
-                          
+set_2_cl_ord = set_1_cl_ord                 
 ############## Dot plots ###############
 ############### Set-1 ########
 merged_samples2 = merged_samples
 
 set1_info_ord = set1_info[match(set_2_cl_ord, set1_info$label),]
-matrix = as.matrix(set1_info_ord[,4:9])
+matrix = as.matrix(set1_info_ord[,4:8])
 markers = c()
 for(i in 1:nrow(set1_info_ord)) markers = c(markers,matrix[i,])
 markers <- markers[markers!='']
-markers = unname(markers)
-div_num = 63 #36#58 #64
+markers = unique(unname(markers))
+div_num = 42#34 #58 #64
 markers_final = unique(c(markers[1:div_num],'Ptprc', 'Cd68', markers[(div_num+1):length(markers)]))
 markers_final = unique(c('Ptprc', 'Cd68',markers))
 markers_final = unique(c('Ptprc', markers[1:div_num], 'Cd68', markers[(div_num+1):length(markers)]))
@@ -386,14 +418,14 @@ scores <- data.frame(rot_data$rotScores)
 colnames(scores) = paste0('Varimax_', 1:ncol(scores))
 embedd_df_rotated <- data.frame(scores)
 
-pc_num = 15
+pc_num = 5
 rot_df <- data.frame(Varimax_1=embedd_df_rotated$Varimax_1,
                      emb_val=embedd_df_rotated[,pc_num],
                      cluster=as.character(merged_samples$cluster),
                      Library_size=merged_samples$nCount_RNA,
                      num_expressed_genes=merged_samples$nFeature_RNA,
                      strain=merged_samples$strain,
-                     #label=factor(df_umap$label, levels = as.character(set_1_cl_ord)),
+                     label=factor(df_umap$label, levels = as.character(set_1_cl_ord)),
                      sample_name = merged_samples$sample_name
                      )
 
@@ -411,7 +443,8 @@ ggplot(rot_df, aes(x=label, y=emb_val, fill=label))+geom_boxplot()+theme_classic
   theme(text = element_text(size=18),
         axis.text.x = element_text(size=13,angle=90,color='black'),
         legend.title = element_blank(), legend.position = "none")+
-  scale_x_discrete(labels = xlabel2)+xlab('')
+  #scale_x_discrete(labels = xlabel2)+
+  xlab('')
 
 ggplot(rot_df, aes(x=label, y=emb_val, fill=strain))+geom_boxplot()+theme_classic()+
   scale_fill_manual(values = c("#CC79A7","#0072B2"))+theme_classic()+
@@ -432,7 +465,7 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=abs(Varimax)))+geom_point(alpha=0.
 ###### strain-specific varimax factors
 
 ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=strain))+geom_point(alpha=0.5,size=1.5)+
-  theme_classic()+ylab(paste0('Varimax_',pc_num))+xlab("Varimax_1")+
+  theme_classic()+ylab(paste0('varimax_',pc_num))+xlab("varimax 1")+
   scale_color_manual(values = c("#CC79A7","#0072B2"))+theme_classic()+
   theme(text = element_text(size=16), legend.title = element_blank())# "#56B4E9"
   #+ggtitle(paste0('Distribution of cells based on strain\nover Varimax ', pc_num))
@@ -559,7 +592,7 @@ ggplot(FeatImpDf, aes(y=MeanDecreaseGini, x=as.factor(Varimax)))+
   theme(axis.text.x = element_text(color = "grey20", size = 12, angle = 90),
         axis.text.y = element_text(color = "grey20", size = 10),  
         axis.title.x = element_text(color = "grey20", size = 13),
-        axis.title.y = element_text(color = "grey20", size = 13))+xlab('Varimax Factors')+ylab('Feature Impoetance\n(Mean Decrease Gini-Score)')
+        axis.title.y = element_text(color = "grey20", size = 13))+xlab('Varimax Factors')+ylab('Feature Importance\n(Mean Decrease Gini-Score)')
   #ggtitle('Top-20 feature-importance score of a Random-Forest \n model tranied to predict rat strains (set-1)')
 
 

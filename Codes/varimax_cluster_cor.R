@@ -56,7 +56,7 @@ dim(merged_old)
 merged_old_cor = cor(merged_old[,-1])
 cluster_num = ncol(rat_old_cluster_average_exp_df) -1
 tovisMat = merged_old_cor[1:cluster_num, (cluster_num+1):ncol(merged_old_cor)]
-colnames(tovisMat) = paste0('Var_', 1:ncol(tovisMat))
+colnames(tovisMat) = paste0('Var ', 1:ncol(tovisMat))
 pheatmap(tovisMat,
          cluster_cols = F, fontsize = 11,  clustering_method='ward.D'
          #main = paste0('set1-Top ',num_DE_genes, ,' marker cluster-varimax correlation')

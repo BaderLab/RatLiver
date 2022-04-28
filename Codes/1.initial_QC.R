@@ -27,7 +27,7 @@ Initialize()
 MIT_CUT_OFF = 40
 LIB_SIZE_CUT_OFF = 2000
 NUM_GENES_DETECTED = 250
-INPUT_NAME = 'rat_Lew_02'# 'rat_DA_M_10WK_003' # 'rat_DA_01_reseq' #'rat_Lew_02' 
+INPUT_NAME = 'rat_DA_M_10WK_003'# 'rat_DA_M_10WK_003' # 'rat_DA_01_reseq' #rat_Lew_01 #'rat_Lew_02' 
 
 if(INPUT_NAME == 'rat_DA_01_reseq') {LIB_SIZE_CUT_OFF=1500; MIT_CUT_OFF=30}
 if(INPUT_NAME == 'rat_DA_M_10WK_003') {LIB_SIZE_CUT_OFF=2000; MIT_CUT_OFF=20}
@@ -52,7 +52,6 @@ TITLE = paste0('mito threshold: ', MIT_CUT_OFF,' , library size threshold: ', LI
 OUTPUT_NAME = paste0('seur_QC_',INPUT_NAME,'_','mito_', MIT_CUT_OFF,'_lib_',LIB_SIZE_CUT_OFF,'.rds')
 #OUTPUT_NAME = paste0('seur_QC_',INPUT_NAME,'_','mito_', MIT_CUT_OFF,'_numGene_',NUM_GENES_DETECTED,'.rds')
 
-OUTPUT_NAME
 
 # ## import the data
 input_from_10x <- paste0("Data/", INPUT_NAME,'/')
@@ -60,7 +59,6 @@ seur_raw <- CreateSeuratObject(counts=Read10X(input_from_10x, gene.column = 2),
                            min.cells=0,min.features=1, 
                            project = "snRNAseq")
 dim(seur_raw)
-rm(list=ls())
 
 seur_genes_df <- read.delim(paste0(input_from_10x,'features.tsv.gz'), header = F)
 seur_raw[['RNA']] <- AddMetaData(seur_raw[['RNA']], seur_genes_df$V2, col.name = 'symbol')
@@ -73,6 +71,12 @@ seur_raw[["mito_perc"]] <- PercentageFeatureSet(seur_raw, features = mito_genes_
 summary(seur_raw[["mito_perc"]]$mito_perc )
 libSize <- colSums(GetAssayData(seur_raw@assays$RNA))
 
+###### 
+folder_name = 'Results/old_samples/MT_info/'
+#dir.create('Results/old_samples/MT_info/')
+meta_qc_df = data.frame(seur_raw@meta.data, umi=INPUT_NAME)
+saveRDS(meta_qc_df, paste0(folder_name,'meta_qc_df_',INPUT_NAME , '.rds'))
+rm(list=ls())
 
 print(paste0('Total number of cells: ', ncol(seur_raw)))
 

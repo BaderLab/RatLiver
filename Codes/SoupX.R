@@ -2,8 +2,30 @@ source('Codes/Functions.R')
 source('Codes/convert_human_to_ortholog_functions.R')
 Initialize()
 
-### need to re-do the lewis-1 as well until saveing the out object
 
+
+
+######### importing the old samples raw data
+
+seur_DA_1 <- CreateSeuratObject(counts=Read10X('Data/rat_DA_01_reseq/', gene.column = 2), min.cells=0,min.features=1, project = "snRNAseq")
+seur_DA_2 = CreateSeuratObject(counts=Read10X('Data/rat_DA_M_10WK_003/', gene.column = 2), min.cells=0,min.features=1, project = "snRNAseq")
+seur_LEW_1 <- CreateSeuratObject(counts=Read10X('Data/rat_Lew_01/', gene.column = 2), min.cells=0,min.features=1, project = "snRNAseq")
+seur_LEW_2 <- CreateSeuratObject(counts=Read10X('Data/rat_Lew_02/', gene.column = 2), min.cells=0,min.features=1, project = "snRNAseq")
+
+seur_merged = merge(seur_DA_1, c(seur_DA_2, seur_LEW_1, seur_LEW_2), 
+                    add.cell.ids = c('rat_DA_01_reseq', 'rat_DA_M_10WK_003', 'rat_Lew_01', 'rat_Lew_02'), 
+                    project = "rat_data", merge.data = TRUE)
+###########################
+
+#### all the cell names in the merged_samples (after filter) need to be included in the seur_merged object
+sum(!colnames(merged_samples) %in% colnames(seur_merged))
+seur_mergedSub = seur_merged[,colnames(seur_merged) %in% selected_UMIs]
+dim(seur_mergedSub)
+seur_mergedSub = seur_mergedSub[]
+
+
+
+### need to re-do the lewis-1 as well until saveing the out object
 sample_name = 'rat_Lew_01'
 ### importing old analyzed seurat object > identity of the clusters are known
 file_name = 'rat_Lew_01_mito_40_lib_2000'

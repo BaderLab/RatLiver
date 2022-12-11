@@ -130,7 +130,7 @@ your_scRNAseq_data_object$cluster = as.character(sCVdata_list$RNA_snn_res.1@Clus
 #saveRDS(your_scRNAseq_data_object, 'Results/new_samples/Immune_subclusters_labelCorrect.rds')
 #saveRDS(your_scRNAseq_data_object, 'Results/new_samples/endothelial_subclusters_labelCorrect.rds')
 
-## creating the meta.data dataframe
+## creating the meta.data dataframe ### process was killed
 head(merged_samples@meta.data)
 your_cluster_results <- data.frame(merged_samples@meta.data[,c(9:ncol(merged_samples@meta.data))]) # 7
 rownames(your_cluster_results)  = rownames(merged_samples@meta.data)
@@ -196,9 +196,10 @@ gridExtra::grid.table(df)
 
 
 
+
 runShiny(
   ## write the path to the file bellow:
-  filePath= new_data_scCLustViz_object,
+  filePath= new_data_scCLustViz_object_Immune,
   
   outPath="./",
   # Save any further analysis performed in the app to the

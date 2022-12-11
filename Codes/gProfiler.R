@@ -52,35 +52,3 @@ head(gp_enrich_res_filt[['cluster_10']], 10)
 
 p <- gostplot(gostres, capped = T, interactive = FALSE)
 # pt2 <- publish_gosttable(gostres, use_colors = TRUE, filename = NULL)
-
-
-### ToDo
-### do the same analysis in GSEA 
-#### visualize using enrichmentMap and cytoscape
-#### check the paper for known markers + check the presentation data
-#### annotate the DA-01 dataset
-
-## need to find gene set 
-# http://www.go2msig.org/cgi-bin/prebuilt.cgi
-
-
-
-genes_df <- read.csv('~/Fatemeh/IR.csv')
-head(genes_df)
-gostres <- gost(query = genes_df$Gene,
-                ordered_query = TRUE, exclude_iea =TRUE, 
-                sources='GO:BP',
-                organism = 'hsapiens')
-
-gpro_res <- gostres$result
-gpro_res <- gpro_res[gpro_res$query_size>5 & gpro_res$query_size<350 & gpro_res$intersection_size >3,]
-col_names <- c('term_name',	'p_value',	'significant',	'term_size',	'query_size',	
-               'intersection_size',	'precision',	'recall',	'term_id', 'source')
-
-gpro_res <- gpro_res[,colnames(gpro_res) %in% col_names]
-gpro_res <- gpro_res[,col_names]
-head(gpro_res)
-write.csv(gpro_res, '~/Fatemeh/gprofiler_IR.csv', row.names = F,quote = F) #sep = "\t",
-#'GO.ID',	'Description',	'p.Val'	'FDR'	'Phenotype'	'Genes'
-
-

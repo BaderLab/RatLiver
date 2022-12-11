@@ -23,7 +23,7 @@ varimax_df <- data.frame(readRDS('~/RatLiver/Results/old_samples/varimax_rotated
 varimax_df <- data.frame(readRDS('~/RatLiver/Results/new_samples/varimax_rotated_object_new.rds')$rotScores)
 
 colnames(varimax_df) <- paste0('varPC_', 1:ncol(varimax_df))
-varimax_df$strain <-as.factor(sapply(strsplit(x = rownames(varimax_df), '_'), '[[', 2))
+varimax_df$strain <- as.factor(sapply(strsplit(x = rownames(varimax_df), '_'), '[[', 2))
 table(varimax_df$strain)
 
 ### splitting the train and test data
@@ -48,6 +48,8 @@ imp.df[order(imp.df$MeanDecreaseAccuracy, decreasing = T),]
 dev.off()
 varImpPlot(strain_pred_RF,main = 'Strain Prediction Based on Varimax-PCs')   
 
+cm2 = confusionMatrix(cm)
+cm2$overall
 
 
 ###########################

@@ -103,10 +103,6 @@ for(i in 1:length(Cluster_markers_final)){
 
 
 
-
-
-
-
 ### check the data using UMAP - sanity check
 df <- data.frame(Embeddings(merged_samples, 'umap'), 
                  sample=merged_samples$sample_name, 

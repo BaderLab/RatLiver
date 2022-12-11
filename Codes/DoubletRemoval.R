@@ -4,6 +4,8 @@ library(scDblFinder)
 library(BiocParallel)
 set.seed(123)
 
+BiocManager::install('scDblFinder')
+
 ############
 new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_labelCor.RData"
 old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"

@@ -17,7 +17,7 @@ new_data_scCLustViz_object <- "Results/new_samples/scClustVizObj/for_scClustViz_
 old_data_scClustViz_object <- "Results/old_samples/for_scClustViz_mergedOldSamples_mt40_lib1500_MTremoved.RData"
 
 #new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub.RData"
-new_data_scCLustViz_object_Immune <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub_c17Included_labelCor.RData"
+new_data_scCLustViz_object_Immune <- "~/RatLiver/Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_ImmuneSub_c17Included_labelCor.RData"
 new_data_scCLustViz_object_endothelial <- "Results/new_samples/scClustVizObj/for_scClustViz_newSamples_MTremoved_EndothelialSub.RData"
 
 #########
@@ -38,7 +38,7 @@ table(merged_samples$orig.ident)
 merged_samples$sample_name = sapply(str_split(colnames(merged_samples), '_'), '[[', 2)
 merged_samples$sample_name = ifelse(merged_samples$orig.ident=='rat_DA_01_reseq', 'DA-1', 
                                     ifelse(merged_samples$orig.ident=='rat_DA_M_10WK_003', 'DA-2',
-                                           ifelse(merged_samples$orig.ident=='rat_Lew_01', 'Lew-1', 'Lew-2')))
+                                           ifelse(merged_samples$orig.ident=='rat_Lew_01', 'LEW-1', 'LEW-2')))
 merged_samples$strain = sapply(str_split(colnames(merged_samples), '_'), '[[', 2)
 
 merged_samples$EndoSub = ifelse(colnames(merged_samples) %in% 
@@ -52,7 +52,7 @@ saveRDS(cell_info_df, 'Results/old_samples/MT_info/cell_info_df.rds')
 ############## Checking QC variables 
 ######################################
 table(merged_samples$sample_name)
-sample_name = 'LEW'
+sample_name = 'LEW-1'
 a_sample = merged_samples[,merged_samples$sample_name==sample_name]
 
 ncol(a_sample)
@@ -79,8 +79,33 @@ summary(Ptprc_exp[Ptprc_exp>0])
 
 ##################################################################
 
+RT_genes = rownames(merged_samples)[grep('Ptgdr', rownames(merged_samples))]
 
 
+cluster_num = '4'
+gene_name = 'Sirpa'  #Sirpa
+rownames(merged_samples)[grep(gene_name, rownames(merged_samples))] ## check if the gene is present in the dataset
+
+df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1], 
+                      UMAP_2=getEmb(merged_samples, 'umap')[,2], 
+                      expression_val=GetAssayData(merged_samples)[gene_name,],
+                      a_cluster=merged_samples$cluster==cluster_num)
+
+
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=expression_val))+
+  geom_point(alpha=0.6,size=1.2)+
+  scale_color_viridis('Expression\nValue', direction = -1)+theme_classic()+
+  theme(text = element_text(size=16.5),
+        plot.title = element_text(hjust = 0.5),
+        legend.title=element_text(size = 10))+
+  ggtitle(paste0(gene_name)) 
+
+
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=a_cluster))+
+  geom_point(alpha=0.6,size=1.2)
+#########################################################
+
+                      
 df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1], 
                       UMAP_2=getEmb(merged_samples, 'umap')[,2], 
                       label=merged_samples$EndoSub,
@@ -404,7 +429,7 @@ DotPlot(merged_samples2, features = markers_final) + RotatedAxis()+ xlab('Marker
 
 
 ############## Varimax-related plots ##############
-rot_data <- readRDS('Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds') ## MT-removed
+rot_data <- readRDS('~/RatLiver/Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds') ## MT-removed
 rot_data <- readRDS('Results/new_samples/varimax_rotated_object_new.rds') ## MT-removed
 rot_data <- readRDS('Results/new_samples/immune_varimax_results.rds') ## set2-immune sub-population
 
@@ -1010,6 +1035,23 @@ ggplot(df, aes(x=library_size, y=mito_perc, color=n_expressed))+geom_point(alpha
   geom_hline(yintercept= MIT_CUT_OFF, linetype="dashed", color = "red")+
   geom_vline(xintercept = LIB_SIZE_CUT_OFF, linetype="dashed", color = "red3", size=0.5)+
   theme(text = element_text(size=16))
+
+
+#######################################################
+##### saving varimax loadings as supp material  #######
+#######################################################
+
+rot_data <- readRDS('~/RatLiver/Results/old_samples/varimax_rotated_OldMergedSamples_mt40_lib1500_MTremoved.rds') ## MT-removed
+rot_data <- readRDS('~/RatLiver/Results/new_samples/varimax_rotated_object_new.rds') ## MT-removed
+
+
+loadings_list = sapply(1:ncol(rot_data$rotLoadings), function(i)rot_data$rotLoadings[,i], simplify = F)
+loadings_df = data.frame(do.call(cbind, loadings_list))
+colnames(loadings_df) = paste0('varPC_', 1:ncol(loadings_df))
+head(loadings_df)
+
+#write.csv(loadings_df, '~/RatLiver/Results/old_samples/varimax_loadings_TLH.csv')
+write.csv(loadings_df, '~/RatLiver/Results/new_samples/varimax_loadings_ImmuneEnriched.csv')
 
 
 

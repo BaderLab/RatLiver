@@ -33,8 +33,6 @@ library('org.Rn.eg.db')
 library('scClustViz')
 
 
-
-
 colorPalatte <- c(
   "dodgerblue2", "#E31A1C", # red
   "green4",

@@ -27,7 +27,7 @@ Initialize()
 MIT_CUT_OFF = 40
 LIB_SIZE_CUT_OFF = 2000
 NUM_GENES_DETECTED = 250
-INPUT_NAME = 'rat_DA_M_10WK_003'# 'rat_DA_M_10WK_003' # 'rat_DA_01_reseq' #rat_Lew_01 #'rat_Lew_02' 
+INPUT_NAME = 'rat_Lew_01'# rat_DA_01_reseq 'rat_DA_M_10WK_003' # 'rat_DA_01_reseq' #rat_Lew_01 #'rat_Lew_02' 
 
 if(INPUT_NAME == 'rat_DA_01_reseq') {LIB_SIZE_CUT_OFF=1500; MIT_CUT_OFF=30}
 if(INPUT_NAME == 'rat_DA_M_10WK_003') {LIB_SIZE_CUT_OFF=2000; MIT_CUT_OFF=20}
@@ -75,8 +75,8 @@ libSize <- colSums(GetAssayData(seur_raw@assays$RNA))
 folder_name = 'Results/old_samples/MT_info/'
 #dir.create('Results/old_samples/MT_info/')
 meta_qc_df = data.frame(seur_raw@meta.data, umi=INPUT_NAME)
-saveRDS(meta_qc_df, paste0(folder_name,'meta_qc_df_',INPUT_NAME , '.rds'))
-rm(list=ls())
+#saveRDS(meta_qc_df, paste0(folder_name,'meta_qc_df_',INPUT_NAME , '.rds'))
+#rm(list=ls())
 
 print(paste0('Total number of cells: ', ncol(seur_raw)))
 
@@ -110,7 +110,7 @@ df = data.frame(library_size= seur_raw$nCount_RNA,
                 n_expressed=seur_raw$nFeature_RNA)
 
 
-dir.create(paste0('Plots/QC/',INPUT_NAME))
+#dir.create(paste0('Plots/QC/',INPUT_NAME))
 ## Visualization of QC metrics
 pdf(paste0('Plots/QC/',INPUT_NAME,'/QC_',INPUT_NAME,'_',
            'mito_',MIT_CUT_OFF,'_lib_',LIB_SIZE_CUT_OFF,'.pdf'))
@@ -130,18 +130,21 @@ ggplot(data.frame(seur_raw$mito_perc), aes(seur_raw.mito_perc))+
   theme_bw()+ggtitle('proportion of reads mapped to Mt genes(before filtering)')+xlab('Mitochondrial proportion (%)')+
   ylab('Number of cells')+labs(caption = INPUT_NAME)
 
-ggplot(df, aes(x=library_size, y=mito_perc, color=n_expressed))+geom_point()+scale_color_viridis()+
+ggplot(df, aes(x=library_size, y=mito_perc, color=n_expressed))+geom_point()+
   theme_bw()+xlab('Library Size')+ylab('Mitochondrial transcript percent')+
-  geom_hline(yintercept= MIT_CUT_OFF, linetype="dashed", color = "red")+labs(caption = INPUT_NAME)+
+  geom_hline(yintercept= MIT_CUT_OFF, linetype="dashed", color = "red")+
   geom_vline(xintercept = LIB_SIZE_CUT_OFF, linetype="dashed", color = "red3", size=0.5)+
-  ggtitle(paste0('mito threshold: ', MIT_CUT_OFF,' , library size threshold: ', LIB_SIZE_CUT_OFF, ' (before filter)'))
+  scale_color_viridis('#expressed\ngenes',direction = +1)+
+  ggtitle(paste0('LEW-2 sample\n','Mitochondrial transcript threshold: ', MIT_CUT_OFF,'\nLibrary size threshold: ', LIB_SIZE_CUT_OFF))
 
 
-ggplot(df, aes(x=library_size, y=mito_perc, color=n_expressed))+geom_point(size=,alpha=0.7)+scale_color_viridis()+
+ggplot(df, aes(x=library_size, y=mito_perc, color=n_expressed))+geom_point(size=1.5,alpha=0.7)+scale_color_viridis()+
   theme_classic()+xlab('Library size')+ylab('Mitochondrial transcript percent')+
-  geom_hline(yintercept= MIT_CUT_OFF, linetype="dashed", color = "red")+labs(caption = INPUT_NAME)+
-  geom_vline(xintercept = LIB_SIZE_CUT_OFF, linetype="dashed", color = "red3", size=0.5)+
-  ggtitle('Library size and mitochondrial transcript cutoffs')
+  geom_hline(yintercept= MIT_CUT_OFF, linetype="dashed", color = "red", size=1)+
+  geom_vline(xintercept = LIB_SIZE_CUT_OFF, linetype="dashed", color = "red3", size=1)+
+  #ggtitle('Library size and mitochondrial transcript cutoffs')+
+  theme(axis.title = element_text(size = 17), axis.text = element_text(size = 16), plot.title=element_text(size=18))
+
 
 
 

@@ -27,7 +27,7 @@ for(i in 2:length(sample_names)){
   outs = paste0(main_dir, sample_name, '/', 'outs/')
   
   nf <- nuclear_fraction_tags(outs=outs,verbose = TRUE)
-  saveRDS(nf, paste0('~/rat_sham_sn_data/',sample_name , '_nucfrac.rds'))
+  #saveRDS(nf, paste0('~/rat_sham_sn_data/',sample_name , '_nucfrac.rds'))
 }
 
 ###########################################################################
@@ -243,7 +243,6 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=sample_name))+geom_point(alpha=0.3
 
 
 
-saveRDS(merged_data, '~/rat_sham_sn_data/sham_singleNuc_merged.rds')
 
 
 

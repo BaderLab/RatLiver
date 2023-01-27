@@ -268,12 +268,12 @@ df_umap <- data.frame(UMAP_1=getEmb(merged_data, 'umap')[,1],
                       cell_status = merged_data$cell_status,
                       nuclear_fraction=merged_data$nuclear_fraction, 
                       Alb=GetAssayData(merged_data)['Alb',], 
+                      #gene=GetAssayData(merged_data)[gene_name,],
                       sample_name = merged_data$sample_name, 
-                      strain = merged_data$strain, 
-                      gene=GetAssayData(merged_data)[gene_name,])
+                      strain = merged_data$strain)
 
 
-ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=cluster))+geom_point(alpha=0.6)+theme_classic()+ggtitle(paste0('res: ', Resolution))
+ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=cluster))+geom_point(alpha=0.8)+theme_classic()#+ggtitle(paste0('res: ', Resolution))
 
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=gene))+geom_point(alpha=0.4)+theme_classic()+
   scale_color_viridis(direction = -1)+ggtitle(gene_name)

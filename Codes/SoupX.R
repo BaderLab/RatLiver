@@ -4,6 +4,8 @@ Initialize()
 
 
 
+# Hep genes for soupX: CYP2E1, ALB, CYP3A7, CYP2A7, CYP2A6, HMOX1
+
 
 ######### importing the old samples raw data
 

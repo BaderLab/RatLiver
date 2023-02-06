@@ -5,6 +5,8 @@ names(meta_qc_list) = gsub('meta_qc_df_', '', list.files(folder_name, pattern = 
 meta_qc_list = lapply(meta_qc_list, function(x) {x$id = paste0(x$umi, '_', rownames(x)); x})
 lapply(meta_qc_list, dim)
 meta_qc_merged = Reduce(rbind,meta_qc_list)
+head(meta_qc_merged)
+
 
 ##### merged object info + adding the cluster annotations ##### 
 cell_info_df = readRDS('~/RatLiver/Results/old_samples/MT_info/cell_info_df.rds')

@@ -300,7 +300,7 @@ table(mac_data_sub$sample_name)
 macrophage_ids <- colnames(mac_data)[mac_data$SCT_snn_res.1.2==0]
 length(macrophage_ids)
 macrophage_ids = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_macrophage_IDs.rds')
-
+length(macrophage_ids)
 
 
 

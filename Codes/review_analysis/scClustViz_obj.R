@@ -23,7 +23,7 @@ Initialize()
 ##########################################################################
 
 merged_samples = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
-ncol1 = ncol(merged_samples@meta.data) 
+ncol1 = ncol(merged_samples@meta.data)
 ### perform clustering for a set of resolutions
 resolutions = seq(0.4, 2.6, 0.3)
 for (res in resolutions){

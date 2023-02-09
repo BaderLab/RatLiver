@@ -4,6 +4,7 @@ source('Codes/FactorAnalysisUtils.R')
 Initialize()
 
 qc_variables <- c( "Library_size", "num_expressed_genes","mito_perc" )
+strain_info = c('DA', 'DA', 'LEW', 'LEW')
 
 check_qc_cor <- function(merged_samples, pca_embedding_df, main){
   df_cor <- data.frame(pca_embedding_df,
@@ -65,7 +66,7 @@ files_rds = sapply(1:length(files_rds),
                      x$sample_name = sample_names[i]
                      x$strain = strain[i]
                      
-                     x = x[,!x$SCT_snn_res.0.7 %in% hep_clusters[[i]]]
+                     # x = x[,!x$SCT_snn_res.0.7 %in% hep_clusters[[i]]]
                      
                      DefaultAssay(x) <- 'RNA'
                      x@assays$SCT <- NULL

@@ -16,6 +16,8 @@ for(i in 1:length(sample_names)){
   #saveRDS(list(sc=sc,out=out),paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/', sample_name, '_soupX_out.rds'))
 }
 
+
+
 # rat_DA_01_reseq: mito=30, library size= 1500
 # rat_DA_M_10WK_003: mito=20, library size=2000
 # rat_Lew_01: mito=40, library size= 2000
@@ -36,7 +38,8 @@ strain_info = c('DA', 'DA', 'LEW', 'LEW')
 for(i in 1:length(sample_names)){
   sample_name = sample_names[i]
 
-  soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/', sample_name, '_soupX_out.rds'))
+  #soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/default_param/', sample_name, '_soupX_out.rds'))
+  soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/paramPlus02/', sample_name, '_soupX_out_Rhoplus.0.2.rds'))
   #soup_profile = soupX_out$sc$soupProfile
   
   rownames(soupX_out$out) = gsub(rownames(soupX_out$out),pattern = '_', replacement = '-')
@@ -80,9 +83,9 @@ Idents(merged_data) = merged_data$sample_name
 
 rm(data_norm_list)
 gc()
-#saveRDS(merged_data, '~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged.rds')
+saveRDS(merged_data, '~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2.rds')
 
-merged_data <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged.rds')
+merged_data <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2.rds')
 DefaultAssay(merged_data) <- 'SCT'
 merged_data@assays$RNA <- NULL
 gc()
@@ -96,17 +99,20 @@ gc()
 merged_data = SCTransform(merged_data, vst.flavor = "v2", verbose = FALSE,assay = 'SCT') 
 #merged_data <- ScaleData(merged_data)
 #merged_data <- FindVariableFeatures(merged_data) #SCT assay is comprised of multiple SCT models
+#saveRDS(merged_data, '~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2_normed.rds')
 
-merged_data <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_normed.rds')
+#merged_data <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_normed.rds')
+merged_data <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2_normed.rds')
+
 
 merged_data <- RunPCA(merged_data,verbose=T)
 plot(100 * merged_data@reductions$pca@stdev^2 / merged_data@reductions$pca@misc$total.variance,
      pch=20,xlab="Principal Component",ylab="% variance explained",log="y")
 
 #### UMAP on PC components and clustering
-merged_data <- RunUMAP(merged_data, reduction = "pca", dims = 1:30, verbose = FALSE) %>%
-  FindNeighbors(reduction = "pca", dims = 1:30, verbose = FALSE) %>%
-  FindClusters(resolution = 0.7, verbose = FALSE)
+#merged_data <- RunUMAP(merged_data, reduction = "pca", dims = 1:30, verbose = FALSE) %>%
+#  FindNeighbors(reduction = "pca", dims = 1:30, verbose = FALSE) %>%
+#  FindClusters(resolution = 0.7, verbose = FALSE)
 
 #### UMAP on corrected PC components and clustering
 merged_data <- RunHarmony(merged_data, group.by.vars = "sample_name")
@@ -116,7 +122,7 @@ merged_data <- RunUMAP(merged_data, reduction = "harmony", dims = 1:30, reductio
 
 Resolution = 0.2
 merged_data <- FindClusters(merged_data, resolution = Resolution, verbose = FALSE)
-gene_name = 'Ptprc'
+gene_name = 'Cd68'
 is_cluster = ifelse(merged_data$seurat_clusters== 7, 'cluster', 'other')
 df_umap <- data.frame(#UMAP_1=getEmb(merged_data, 'umap')[,1], 
                       #UMAP_2=getEmb(merged_data, 'umap')[,2], 
@@ -140,6 +146,9 @@ ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=sample_name))+geom_point(alpha
 
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=gene))+geom_point(alpha=0.4)+theme_classic()+
   scale_color_viridis(direction = -1)+ggtitle(gene_name)
+ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=Alb))+geom_point(alpha=0.4)+theme_classic()+
+  scale_color_viridis(direction = -1)+ggtitle('Alb')
+
 
 genes = c('Alb', 'Tat', 'G6pc', 'Cps1', 'Tdo2')
 genes = c('Lyve1', 'Id3') # Lsecs

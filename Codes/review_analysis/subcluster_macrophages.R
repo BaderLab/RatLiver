@@ -36,7 +36,7 @@ mac_cluster_num = 8
 macrophage_ids <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_macrophage_IDs.rds') 
 
 mac_data = merged_samples[, merged_samples$cluster==mac_cluster_num]
-mac_data = merged_samples[, colnames(merged_samples) %in% macrophage_ids]
+#mac_data = merged_samples[, colnames(merged_samples) %in% macrophage_ids]
 
 
 mac_data_meta = mac_data@meta.data
@@ -61,7 +61,7 @@ markers2 = c('Lyz2', 'Clec10a', 'Clec9a') ##'Xcr1' was not captured
 
 
 markers = c(markers1, markers2)
-i = 9
+i = 7
 gene_name = markers[i] 
 gene_name = 'Lyz2'
 df_umap <- data.frame(UMAP_1=getEmb(mac_data, 'umap')[,1], 
@@ -83,7 +83,7 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=a_gene))+geom_point(size=1.5, alph
 
 
 
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1,alpha=0.6)+
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1.7,alpha=0.6)+
   theme_classic()+scale_color_manual(values = c(colorPalatte))+ggtitle(paste0('resolution: ', res))#colorPalatte
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=sample_name))+geom_point(size=1.3,alpha=0.7)+theme_classic()
 
@@ -134,7 +134,7 @@ cluster_names_types = names(table(df_umap$cluster))
 ### dividing the expression matrix based on the clusters
 cluster_expression <- sapply(1:length(cluster_names_types), function(i){
   a_cluster_name = cluster_names_types[i]
-  GetAssayData(merged_samples, 'data')[,merged_samples$SCT_snn_res.1.2 == a_cluster_name] 
+  GetAssayData(merged_samples, 'data')[,merged_samples$SCT_snn_res.1 == a_cluster_name] 
 }, simplify = F)
 
 names(cluster_expression) = cluster_names_types
@@ -235,6 +235,69 @@ number_of_clusters = length(cluster_names_types)
 rat_cor_mat = rat_cor_mat[1:number_of_clusters,(number_of_clusters+1):ncol(rat_cor_mat)] 
 pheatmap(rat_cor_mat,color = inferno(20),  clustering_method='ward.D2')
 
+
+##############################################################################
+#####  Finding the DE markers for macrophage subclusters
+##############################################################################
+Idents(mac_data) = mac_data$SCT_snn_res.1
+cluster_names <-  levels(mac_data)
+### finding the markers while removing the mito-genes
+Cluster_markers <- sapply(1:length(cluster_names), 
+                          function(i) FindMarkers(mac_data, 
+                                                  ident.1=cluster_names[i],
+                                                  logfc.threshold = 0,
+                                                  min.pct=0,
+                                                  min.cells.feature = 1,
+                                                  min.cells.group = 1
+                          ), 
+                          simplify = FALSE)
+names(Cluster_markers) <- cluster_names
+
+
+P_value_thr = 0.05
+Cluster_markers_final <- sapply(1:length(Cluster_markers), function(i) {
+  
+  ## selecting the cluster of interest's marker dataframe (x)
+  x = Cluster_markers[[i]]
+  a_cluster_name <- names(Cluster_markers)[i]
+  
+  ## sort rows of x based on log-fold change
+  x = x[order(x$avg_log2FC, decreasing = T),]
+  
+  ## sort based on adj p-value and sign of logFC  
+  # x$ranking_score=-log10(x$p_val_adj+.Machine$double.xmin)*sign(x$avg_log2FC)
+  # x = x[order(x$ranking_score, decreasing = T),]
+  
+  ## add the average expression of each gene as a column
+  selected_cells = Idents(mac_data) == a_cluster_name
+  data <- GetAssayData(mac_data)[rownames(x),]
+  x$avg_exp <- rowSums(data[,selected_cells])/sum(selected_cells)
+  
+  ## filtering genes with adj-p-value higher than 0.05
+  #x = x[x$p_val_adj<P_value_thr,]
+  
+  return(x)
+}, simplify = F)
+
+
+names(Cluster_markers_final) <- names(Cluster_markers)
+lapply(Cluster_markers_final, head)
+
+
+saveRDS(Cluster_markers_final, paste0('~/rat_sham_sn_data/standardQC_results/sham_sn_macrophage_subcluster_markers_res1.rds'))
+
+
+#### saving markers #####
+dir.create(paste0('~/rat_sham_sn_data/standardQC_results/Mac_subcluster_markers_res1/'))
+for(i in 1:length(Cluster_markers_final)){
+  #df <- data.frame(genes=rownames(Cluster_markers[[i]]),
+  #                 score=Cluster_markers[[i]]$ranking_score)
+  df <- data.frame(Cluster_markers_final[[i]])
+  print(head(df, 25))
+  file_name <- names(Cluster_markers_final)[i]
+  write.csv(df, paste0('~/rat_sham_sn_data/standardQC_results/Mac_subcluster_markers_res1/', file_name,'.txt'), 
+            col.names = T, row.names = T, quote = F)
+}
 
 
 

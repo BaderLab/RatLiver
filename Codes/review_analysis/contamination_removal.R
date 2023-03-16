@@ -18,6 +18,7 @@ for(i in 1:length(sample_names)){
 
 
 
+
 # rat_DA_01_reseq: mito=30, library size= 1500
 # rat_DA_M_10WK_003: mito=20, library size=2000
 # rat_Lew_01: mito=40, library size= 2000
@@ -39,7 +40,8 @@ for(i in 1:length(sample_names)){
   sample_name = sample_names[i]
 
   #soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/default_param/', sample_name, '_soupX_out.rds'))
-  soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/paramPlus02/', sample_name, '_soupX_out_Rhoplus.0.2.rds'))
+  soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/paramPlus01/', sample_name, '_soupX_out_Rhoplus.0.1.rds'))
+  #soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/paramPlus02/', sample_name, '_soupX_out_Rhoplus.0.2.rds'))
   #soup_profile = soupX_out$sc$soupProfile
   
   rownames(soupX_out$out) = gsub(rownames(soupX_out$out),pattern = '_', replacement = '-')
@@ -83,27 +85,28 @@ Idents(merged_data) = merged_data$sample_name
 
 rm(data_norm_list)
 gc()
-saveRDS(merged_data, '~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2.rds')
-
-merged_data <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2.rds')
+#saveRDS(merged_data, '~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2.rds')
+saveRDS(merged_data, '~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.1.rds')
+merged_data <- readRDS( '~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.1.rds')
+#merged_data <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2.rds')
 DefaultAssay(merged_data) <- 'SCT'
 merged_data@assays$RNA <- NULL
 gc()
 #merged_data_backup <- merged_data
 #merged_data <- merged_data_backup
 
-
 ### run the pipeline without this line and see how it would differ - could not run pca and find variable genes
 #### scaling the merged data instead of SCTransform does not solve the issue
 ### current pipeline: we are normlizing the individual samples first - merging them - normalizing the merged sample 
-merged_data = SCTransform(merged_data, vst.flavor = "v2", verbose = FALSE,assay = 'SCT') 
+merged_data = SCTransform(merged_data, vst.flavor = "v2", verbose = TRUE, assay = 'SCT', conserve.memory = TRUE) 
 #merged_data <- ScaleData(merged_data)
 #merged_data <- FindVariableFeatures(merged_data) #SCT assay is comprised of multiple SCT models
 #saveRDS(merged_data, '~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2_normed.rds')
 
+#saveRDS(merged_data, '~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.1_normed.rds')
 #merged_data <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_normed.rds')
-merged_data <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2_normed.rds')
-
+#merged_data <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.2_normed.rds')
+merged_data = readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_Rhoplus.0.1_normed.rds')
 
 merged_data <- RunPCA(merged_data,verbose=T)
 plot(100 * merged_data@reductions$pca@stdev^2 / merged_data@reductions$pca@misc$total.variance,

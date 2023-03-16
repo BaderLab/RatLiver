@@ -29,20 +29,39 @@ get_scaled_by_gene <- function(x){
 ############ Importing the new data to be annotated #########
 #merged_samples = readRDS('~/rat_sham_sn_data/DropletQC_results/sham_sn_merged_data_dropletQC.rds')
 merged_samples = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC.rds')
+merged_samples <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
+gene_names = c('Ptprc', 'Calcrl', 'Nkg7', 'Cd3e', 'Marco', 'Lyz2', 'Cd19', 'Ms4a1', 'Stab2')
+gene_names = c('Ptprc', 'Sox9', 'Acta2', 'Cyp2e1', 'Pck1', 'Cyp1a2')
+
+merged_samples <- FindNeighbors(merged_samples,reduction="harmony",verbose=T)
+
+Resolution = 0.6
+merged_samples <- FindClusters(merged_samples, resolution = Resolution, verbose = FALSE)
 
 
+i = 7
+gene_name = gene_names[i]
 df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap_h')[,1], 
                       UMAP_2=getEmb(merged_samples, 'umap_h')[,2], 
                       library_size= merged_samples$nCount_RNA, 
                       mito_perc=merged_samples$mito_perc, 
                       n_expressed=merged_samples$nFeature_RNA,
-                      cluster=merged_samples$seurat_clusters, 
+                      cluster=merged_samples$SCT_snn_res.0.6, 
                       cell_status = merged_samples$cell_status,
                       nuclear_fraction=merged_samples$nuclear_fraction, 
                       Alb=GetAssayData(merged_samples)['Alb',], 
                       sample_name = merged_samples$sample_name, 
+                      gene=GetAssayData(merged_samples)[gene_name,],
                       strain = merged_samples$strain, 
                       umi=colnames(merged_samples))
+
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=gene))+geom_point(alpha=0.6,size=1.4)+
+  scale_color_viridis('Expression\nValue', direction = -1)+theme_classic()+
+  theme(text = element_text(size=16.5),
+        plot.title = element_text(hjust = 0.5),
+        legend.title=element_text(size = 10))+
+  ggtitle(paste0(gene_name)) 
+
 
 
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1,alpha=0.6)+theme_classic()
@@ -243,6 +262,10 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=annot_IM))+geom_point(size=1.5,alp
   theme_classic()+scale_color_manual(values = c(colorPalatte, 'black')) #mycolors
 
 df_umap$label_set2 = df_umap$label  
+
+
+
+
 ###### generating count barplots
 
 df <- data.frame(sample_type = merged_samples$sample_name, 

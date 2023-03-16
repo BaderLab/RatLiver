@@ -89,13 +89,17 @@ merged_data <- RunUMAP(merged_data, reduction = "harmony", dims = 1:30, reductio
   FindNeighbors(reduction = "harmony", dims = 1:30, verbose = FALSE) %>%
   FindClusters(resolution = 0.7, verbose = FALSE)
 
-Resolution = 0.4
+
+merged_data <- readRDS('Results/review_analysis/merged_samples_TLH_harmonized_qc_mt40_lib2000.rds')
+
+
+
+Resolution = 0.3
 merged_data <- FindClusters(merged_data, resolution = Resolution, verbose = FALSE)
 gene_name = 'Ecm1'
 cluster_num = 5
 is_cluster = ifelse(merged_data$seurat_clusters== cluster_num, paste0('cluster',cluster_num), 'other')
 
-merged_data <- readRDS('Results/review_analysis/merged_samples_TLH_harmonized_qc_mt40_lib2000.rds')
 
 df_umap <- data.frame(#UMAP_1=getEmb(merged_data, 'umap')[,1], 
   #UMAP_2=getEmb(merged_data, 'umap')[,2], 
@@ -104,7 +108,7 @@ df_umap <- data.frame(#UMAP_1=getEmb(merged_data, 'umap')[,1],
   library_size= merged_data$nCount_RNA, 
   mito_perc=merged_data$mito_perc, 
   n_expressed=merged_data$nFeature_RNA,
-  cluster=merged_data$seurat_clusters, 
+  cluster=merged_data$SCT_snn_res.0.3, 
   is_cluster=is_cluster,
   #cell_status = merged_data$cell_status,
   #nuclear_fraction=merged_data$nuclear_fraction, 
@@ -113,11 +117,14 @@ df_umap <- data.frame(#UMAP_1=getEmb(merged_data, 'umap')[,1],
   #strain = merged_data$strain
   sample_name = merged_data$sample_name)
 
+
+ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=cluster))+geom_point(alpha=0.6)+theme_classic()+
+  scale_color_manual(values = colorPalatte)+ggtitle(paste0('res: ', Resolution))+
+  xlab('UMAP_1')+ylab('UMAP_2')
+
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=gene))+geom_point(alpha=0.4)+theme_classic()+
   scale_color_viridis(direction = -1)+ggtitle(gene_name)
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=is_cluster))+geom_point(alpha=0.8)+theme_classic()#+ggtitle(paste0('res: ', Resolution))
-ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=cluster))+geom_point(alpha=0.8)+theme_classic()+
-  scale_color_manual(values = colorPalatte)#+ggtitle(paste0('res: ', Resolution))
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=sample_name))+geom_point(alpha=0.3)+theme_classic()#+ggtitle(paste0('res: ', Resolution))
 
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=Alb))+geom_point(alpha=0.4)+theme_classic()+
@@ -194,7 +201,8 @@ gene_exp_matrix = GetAssayData(merged_samples, assay = 'RNA')
 dim(gene_exp_matrix)
 dim(loading_matrix)
 
-rot_data <- get_varimax_rotated(gene_exp_matrix, loading_matrix)
+rot_data <- readRDS('Results/review_analysis/VarimaxPCA_merged_samples_allfeatures_TLH_harmonized_qc_mt40_lib2000_scTrans_res.rds')
+#rot_data <- get_varimax_rotated(gene_exp_matrix, loading_matrix)
 rotatedLoadings <- rot_data$rotLoadings
 scores <- data.frame(rot_data$rotScores)
 colnames(scores) = paste0('PC_', 1:ncol(scores))
@@ -208,12 +216,15 @@ embedd_df_rotated_2 <- embedd_df_rotated[,PCs_to_check]
 colnames(embedd_df_rotated_2) <- paste0('Var_', PCs_to_check)
 
 
-rot_data <- readRDS('Results/review_analysis/VarimaxPCA_merged_samples_allfeatures_TLH_harmonized_qc_mt40_lib2000_scTrans_res.rds')
 #### adding meta data to the varimax data frame
-sum(rownames(merged_samples@meta.data) != rownames(embedd_df_rotated_2))
-embedd_df_rotated_2 = data.frame(cbind(embedd_df_rotated_2, merged_samples@meta.data)) ### run for the complete data
+sum(rownames(merged_data@meta.data) != rownames(embedd_df_rotated_2))
+embedd_df_rotated_2 = data.frame(cbind(embedd_df_rotated_2, merged_data@meta.data)) ### run for the complete data
 
-check_qc_cor(merged_samples, embedd_df_rotated_2[,PCs_to_check], 
+merged_data$strain=unlist(lapply(str_split(string = merged_data@meta.data$sample_name,pattern = '_'), '[[',2))
+table(merged_data$strain)
+
+
+check_qc_cor(merged_data, embedd_df_rotated_2[,PCs_to_check], 
              main='Varimax-PC embeddings correlation with technical covariates')
 
 
@@ -253,6 +264,25 @@ dev.off()
 strain_factor = 23
 strain_factor = 7
 i = strain_factor
+pc_num = i
+rot_df <- data.frame(Varimax_1=embedd_df_rotated_2$Var_1,
+                     emb_val=embedd_df_rotated_2[,pc_num],
+                     #cluster=as.character(merged_samples$final_cluster),
+                     cluster=as.character(embedd_df_rotated_2$seurat_clusters),
+                     #label = as.character(embedd_df_rotated_2$annot_TLH),
+                     sample_name=embedd_df_rotated_2$sample_name,
+                     strain=merged_data$strain,
+                     #nuclear_fraction = embedd_df_rotated_2$nuclear_fraction,
+                     nCount_RNA = embedd_df_rotated_2$nCount_SCT,
+                     UMAP_1=getEmb(merged_data, 'umap_h')[,1], 
+                     UMAP_2=getEmb(merged_data, 'umap_h')[,2])
+
+ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=strain))+geom_point(alpha=0.6, size=1.1)+
+  theme_classic()+ylab(paste0('Varimax ',i))+xlab("Varimax 1")+
+  scale_color_manual(values = c("#CC79A7","#0072B2"))+
+  theme(text = element_text(size=16), legend.title = element_blank())
+
+
 head(loading_matrix[order(loading_matrix[,strain_factor], decreasing = T),],20)
 head(loading_matrix[order(loading_matrix[,strain_factor], decreasing = F),],20)
 
@@ -261,10 +291,54 @@ ggplot(rot_df, aes(x=UMAP_h_1, y=UMAP_h_2, color=emb_val))+geom_point(alpha=0.4,
   scale_color_viridis(direction = -1, option = 'magma')+ggtitle(paste0('Varimax ', strain_factor))
 
 ggplot(rot_df, aes(y=emb_val, x=strain, fill=strain))+geom_boxplot()+theme_classic()+
-  ggtitle(paste0('Varimax ', strain_factor, ''))+ylab(paste0('Varimax-', strain_factor, ' Score'))
+  ylab(paste0('Varimax ', strain_factor, ''))+
+  scale_fill_manual(values = c("#CC79A7","#0072B2"))+theme(text = element_text(size=18),
+                                                           axis.text.x = element_text(size=13,angle=90,color='black'),
+                                                           legend.title = element_blank(), legend.position = "none")
+  scale_x_discrete(labels = xlabel2)+xlab('')
+
+ggplot(, aes(y=emb_val, x=strain, fill=strain))+geom_boxplot()+theme_classic()+
+  ggtitle(paste0('Varimax ', strain_factor, ' Macrophages'))+ylab(paste0('Varimax-', strain_factor, ' Score'))
 
 ggplot(rot_df[rot_df$cluster==5,], aes(y=emb_val, x=strain, fill=strain))+geom_boxplot()+theme_classic()+
-  ggtitle(paste0('Varimax ', strain_factor, ' Macrophages'))+ylab(paste0('Varimax-', strain_factor, ' Score'))
+  ylab(paste0('Varimax ', strain_factor, ''))+
+  scale_fill_manual(values = c("#CC79A7","#0072B2"))+theme(text = element_text(size=18),
+                                                           axis.text.x = element_text(size=13,angle=90,color='black'),
+                                                           legend.title = element_blank(), legend.position = "none")
+
+
+library(plyr)
+library(stats)
+library(ggpubr)
+library(RColorBrewer)
+library(viridis)
+library(scales)
+data_summary <- function(x) {
+  m <- mean(x)
+  ymin <- m-sd(x)
+  ymax <- m+sd(x)
+  return(c(y=m,ymin=ymin,ymax=ymax))
+}
+
+ggplot(rot_df[rot_df$cluster==5,], aes(x=strain, y=emb_val, fill=strain))+geom_boxplot()+theme_classic()+
+  scale_fill_manual(values = c("#CC79A7","#0072B2"))+theme_classic()+
+  ylab(paste0('Varimax ', pc_num))+xlab('')+
+  theme(text = element_text(size=17),axis.text.x = element_text(size=18,color='black'), legend.title = element_blank())+
+  stat_summary(fun.data=data_summary)+stat_compare_means(label.x = 0.9, label.y = 3.8, size=5)
+
+
+ggplot(rot_df, aes(x=strain, y=emb_val, fill=strain))+geom_boxplot()+theme_classic()+
+  scale_fill_manual(values = c("#CC79A7","#0072B2"))+theme_classic()+
+  ylab(paste0('Varimax ', pc_num))+xlab('')+
+  theme(text = element_text(size=17),axis.text.x = element_text(size=18,color='black'), legend.title = element_blank())+
+  stat_summary(fun.data=data_summary)+stat_compare_means(label.x = 0.9, label.y = 3.8, size=5)
+
+
+
+rot_df$Varimax = abs(rot_df$emb_val)
+ggplot(rot_df, aes(x=UMAP_1, y=UMAP_2, color=abs(Varimax)))+geom_point(alpha=0.5,size=1)+
+  scale_color_viridis(direction = -1, option = 'inferno',name=paste0("Varimax ", pc_num))+theme_classic()+
+  theme(text = element_text(size=16), legend.title=element_text(size=15))
 
 
 ######################################################
@@ -276,8 +350,8 @@ rotLoadings_harmonized = rotLoadings_harmonized[,1:25]
 rotLoadings_TLH = data.frame(sapply(1:ncol(varimax_res_TLH$rotLoadings),function(i)varimax_res_TLH$rotLoadings[,i],simplify = T ))
 rotLoadings_TLH = rotLoadings_TLH[,1:25]
 
-colnames(rotLoadings_harmonized) = paste0('var_',1:ncol(rotLoadings_harmonized), '.hqc')
-colnames(rotLoadings_TLH) = paste0('var_',1:ncol(rotLoadings_TLH), '.v0')
+colnames(rotLoadings_harmonized) = paste0('Var ',1:ncol(rotLoadings_harmonized), '')
+colnames(rotLoadings_TLH) = paste0('Var.PC',1:ncol(rotLoadings_TLH), '')
 
 rotLoadings_harmonized$genes = rownames(rotLoadings_harmonized)
 rotLoadings_TLH$genes = rownames(rotLoadings_TLH)
@@ -301,12 +375,13 @@ pheatmap(cor_mat_sub)
 ##################################################################
 ############## calculating the cluster average expression of the new data ############## 
 
+merged_data$seurat_clusters <- merged_data$SCT_snn_res.0.3
 nb.cols <- length(names(table(merged_data$seurat_clusters)))
 mycolors <- colorRampPalette(brewer.pal(8, "Set1"))(nb.cols) #Pastel1
 
 merged_data <- FindNeighbors(merged_data, reduction = "harmony", dims = 1:30)
 merged_data <- FindClusters(merged_data, resolution = 0.7)
-df_umap$cluster = merged_data$SCT_snn_res.0.7
+df_umap$cluster = merged_data$SCT_snn_res.0.3
 
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1,alpha=0.6)+
   theme_classic()+scale_color_manual(values = c(colorPalatte)) #mycolors
@@ -342,7 +417,7 @@ cluster_average_exp_df <- get_scaled_by_gene(cluster_average_exp_df) ## scaling 
 cluster_average_exp_df$rat_ID=rownames(cluster_average_exp_df)
 head(cluster_average_exp_df)
 
-cluster_average_exp_df = cluster_average_exp_df[rownames(cluster_average_exp_df)%in%VariableFeatures(merged_samples),]
+cluster_average_exp_df = cluster_average_exp_df[rownames(cluster_average_exp_df)%in%VariableFeatures(merged_data),]
 head(cluster_average_exp_df)
 dim(cluster_average_exp_df)
 
@@ -383,7 +458,7 @@ colnames(rat_cor_mat) <- gsub('Inflammatory', 'Inf', colnames(rat_cor_mat))
 rownames(rat_cor_mat) = colnames(rat_cor_mat)
 number_of_clusters = length(cluster_names_types)
 rat_cor_mat = rat_cor_mat[1:number_of_clusters,(number_of_clusters+1):ncol(rat_cor_mat)] 
-pheatmap(rat_cor_mat,color = inferno(20),  clustering_method='ward.D2')
+pheatmap(t(rat_cor_mat),color = inferno(20),  clustering_method='ward.D2')
 
 
 get_matched_label <- function(index, cor.mat, thr){

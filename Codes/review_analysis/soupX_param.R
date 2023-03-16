@@ -12,23 +12,24 @@ i = 1
 rho_list = sapply(1:length(sample_names), function(i){
   sample_name = sample_names[i]
   print(sample_name)
-  soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/', sample_name, '_soupX_out.rds'))
+  soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/default_param/', sample_name, '_soupX_out.rds'))
   print(table(soupX_out$sc$metaData$rho))
   return(soupX_out$sc$metaData$rho[i])
 })
 
 names(rho_list) = sample_names
 
+add_val = 0.1
 for(i in 1:length(sample_names)){
   sample_name = sample_names[i]
   print(sample_name)
   sc = load10X(paste0('~/RatLiver/Data/SoupX_data/SoupX_inputs/', sample_name, '/'))
   
   #sc = autoEstCont(sc, forceAccept = TRUE)
-  sc = setContaminationFraction(sc,rho_list[i]+0.2, forceAccept = TRUE)
+  sc = setContaminationFraction(sc,rho_list[i]+add_val, forceAccept = TRUE)
   
   out = adjustCounts(sc)
-  saveRDS(list(sc=sc,out=out),paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/', sample_name, '_soupX_out_Rhoplus.0.2.rds'))
+  saveRDS(list(sc=sc,out=out),paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/', sample_name, '_soupX_out_Rhoplus.',add_val,'.rds'))
 }
 dev.off()
 

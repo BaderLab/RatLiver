@@ -11,7 +11,20 @@ library(DropletQC)
 library(ggplot2)
 library(patchwork)
 library(dplyr)
-
+library(scmap)
+library(celldex)
+library(plyr)
+library(stats)
+library(ggpubr)
+library(RColorBrewer)
+library(viridis)
+library(scales)
+library(plyr)
+library(stats)
+library(ggpubr)
+library(RColorBrewer)
+library(viridis)
+library(scales)
 
 sample_names = c('MacParland__SingleNuc_DA_SHAM003_CST_3pr_v3', 'MacParland__SingleNuc_DA_SHAM004_CST_3pr_v3' , 
                  'MacParland__SingleNuc_LEW_SHAM1_CST_3pr_v3', 'MacParland__SingleNuc_LEW_SHAM2_CST_3pr_v3')
@@ -24,7 +37,7 @@ NUM_GENES_DETECTED = 100
 
 i = 4
 sample_name = sample_names[i]
-
+sample_name
 
 input_from_10x <- paste0("~/rat_sham_sn_data/", sample_name,'/filtered_feature_bc_matrix/')
 data_raw <- CreateSeuratObject(counts=Read10X(input_from_10x, gene.column = 2),
@@ -38,8 +51,16 @@ data_raw[["mito_perc"]] <- PercentageFeatureSet(data_raw, features = mito_genes_
 summary(data_raw[["mito_perc"]]$mito_perc )
 libSize <- colSums(GetAssayData(data_raw@assays$RNA))
 dim(data_raw)
+Idents(data_raw) <- ''
 
 
+RIBO_PATTERN = '^Rp[sl]'
+ribo_genes_index <- grep(pattern = RIBO_PATTERN, rownames(data_raw))
+data_raw[['RNA']]@meta.features$symbol[ribo_genes_index]
+data_raw[["ribo_perc"]] <- PercentageFeatureSet(data_raw, features = ribo_genes_index)
+head(data_raw@meta.data)
+
+VlnPlot(data_raw, features = c("nFeature_RNA", "nCount_RNA", "mito_perc", 'ribo_perc'), ncol = 4)
 
 ######## fast evaluation of the results 
 print(paste0('Total number of cells: ', ncol(data_raw)))
@@ -251,10 +272,26 @@ merged_data <- RunUMAP(merged_data, reduction = "pca", dims = 1:30, verbose = FA
 merged_data <- RunHarmony(merged_data, group.by.vars = "sample_name")
 merged_data <- RunUMAP(merged_data, reduction = "harmony", dims = 1:30, reduction.name = "umap_h")  %>%
   FindNeighbors(reduction = "harmony", dims = 1:30, verbose = FALSE) %>%
-  FindClusters(resolution = 0.7, verbose = FALSE)
+  FindClusters(resolution = 0.6, verbose = FALSE)
 
-Resolution = 2.2
+
+merged_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
+merged_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC.rds')
+
+
+Resolution = 0.6
 merged_data <- FindClusters(merged_data, resolution = Resolution, verbose = FALSE)
+
+
+
+markers1 = c('Ptprc','Cd68', 'Cd163', 'Mrc1', 'Clec4f', 'Siglec5')
+markers2 = c('Lyz2', 'Clec10a', 'Clec9a') ##'Xcr1' was not captured
+
+markers = c('Ptprc', 'Calcrl', 'Nkg7', 'Cd3e', 'Marco', 'Lyz2', 'Cd19', 'Ms4a1', 'Stab2')
+markers = c(markers1, markers2)
+i = 7
+gene_name = markers[i] 
+
 gene_name = 'Cd5l'
 
 df_umap <- data.frame(UMAP_1=getEmb(merged_data, 'umap')[,1], 
@@ -273,7 +310,11 @@ df_umap <- data.frame(UMAP_1=getEmb(merged_data, 'umap')[,1],
                       strain = merged_data$strain)
 
 
-ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=cluster))+geom_point(alpha=0.8)+theme_classic()#+ggtitle(paste0('res: ', Resolution))
+
+ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=cluster))+geom_point(alpha=0.8, size=2)+theme_classic()+
+  scale_color_manual(name='clusters',values = colorPalatte)+
+  theme(text = element_text(size=15),legend.title = element_blank())+
+  xlab('UMAP_1')+ylab('UMAP_2')##+ggtitle(paste0('res: ', Resolution))
 
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=gene))+geom_point(alpha=0.4)+theme_classic()+
   scale_color_viridis(direction = -1)+ggtitle(gene_name)
@@ -293,5 +334,42 @@ ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=cell_status))+geom_point(alpha
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=strain))+geom_point(alpha=0.3)+theme_classic()
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=sample_name))+geom_point(alpha=0.3)+theme_classic()
 
-saveRDS(merged_data, '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC.rds')
+
+
+
+
+###### generating count barplots
+
+df <- data.frame(sample_type = merged_data$sample_name, 
+                 cluster = as.character(df_umap$cluster))
+rownames(df) = NULL
+counts <- ddply(df, .(df$sample_type, df$cluster), nrow)
+names(counts) <- c("sample_type", "cluster", "Freq")
+
+###### ordering the bars in decreasing order
+freq.df = data.frame(table(df$cluster))
+freq.df = freq.df[order(freq.df$Freq, decreasing = T),]
+cluster_orders = as.character(freq.df$Var1)
+counts$cluster= factor(counts$cluster, levels = cluster_orders ) 
+
+
+ggplot(data=counts, aes(x=cluster, y=Freq, fill=sample_type)) +
+  geom_bar(stat="identity",color='black')+theme_classic()+#+scale_fill_brewer(palette = "Blues")+
+  ylab('Counts')+xlab('Clusters')+
+  theme(text = element_text(size=15),
+        axis.text.x = element_text(size=10,angle=90,color='black'),
+        legend.title = element_blank())+
+  xlab('')
+
+counts_split <- split( counts , f = counts$cluster )
+counts_split_norm <- lapply(counts_split, function(x) {x$Freq=x$Freq/sum(x$Freq);x})
+counts_norm <- do.call(rbind,counts_split_norm )
+
+ggplot(data=counts_norm, aes(x=cluster, y=Freq, fill=sample_type)) +
+  geom_bar(stat="identity",color='black',alpha=0.9)+theme_classic()+
+  ylab('Fraction of sample per cell type (%)')+
+  theme(text = element_text(size=15),
+        axis.text.x = element_text(size=12.5,angle=90,color='black'),
+        legend.title = element_blank()) +  
+  xlab('')
 

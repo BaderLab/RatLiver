@@ -7,12 +7,17 @@ Initialize()
 MIT_CUT_OFF = 40
 LIB_SIZE_CUT_OFF = 2000
 NUM_GENES_DETECTED = 250
-INPUT_NAME = 'rat_Lew_02'# rat_DA_01_reseq 'rat_DA_M_10WK_003' # 'rat_DA_01_reseq' #rat_Lew_01 #'rat_Lew_02' 
+INPUT_NAME = 'rat_LEW_M09_WK_009_3pr_v3'# rat_DA_01_reseq 'rat_DA_M_10WK_003' # 'rat_DA_01_reseq' #rat_Lew_01 #'rat_Lew_02' 
 
+##### TLH map
 if(INPUT_NAME == 'rat_DA_01_reseq') {LIB_SIZE_CUT_OFF=1500; MIT_CUT_OFF=30}
 if(INPUT_NAME == 'rat_DA_M_10WK_003') {LIB_SIZE_CUT_OFF=2000; MIT_CUT_OFF=20}
+
+##### Immune enriched map
 if(INPUT_NAME == 'rat_DA_M09_WK_008_3pr_v3') {LIB_SIZE_CUT_OFF=1000; MIT_CUT_OFF=50}
-if(INPUT_NAME == 'rat_LEW_M09_WK_009_3pr_v3') {LIB_SIZE_CUT_OFF=1500; MIT_CUT_OFF=40}
+if(INPUT_NAME == 'rat_LEW_M09_WK_009_3pr_v3') {LIB_SIZE_CUT_OFF=1000; MIT_CUT_OFF=50}
+
+# rat_LEW_M09_WK_009_3pr_v3: mito=40, library size= 1500
 
 
 # rat_DA_01_reseq --> 50778

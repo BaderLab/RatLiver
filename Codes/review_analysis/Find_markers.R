@@ -3,9 +3,10 @@ source('Codes/Functions.R')
 Initialize()
 library(plyr)
 
+merged_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC.rds')
 merged_samples = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
 merged_samples <- FindNeighbors(merged_samples,reduction="harmony",verbose=T)
-Resolution = 0.6
+Resolution = 0.7
 merged_samples <- FindClusters(merged_samples, resolution = Resolution, verbose = FALSE)
 merged_samples$cluster = as.character(merged_samples$SCT_snn_res.0.6)
 
@@ -15,7 +16,8 @@ cluster_names <-  levels(merged_samples)
 
 df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap_h')[,1], 
                       UMAP_2=getEmb(merged_samples, 'umap_h')[,2], 
-                      cluster=merged_samples$cluster, 
+                      #cluster=merged_samples$cluster, 
+                      cluster=merged_samples$SCT_snn_res.0.7, 
                       Alb=GetAssayData(merged_samples)['Alb',], 
                       sample_name = merged_samples$sample_name, 
                       strain = merged_samples$strain, 
@@ -69,7 +71,7 @@ names(Cluster_markers_final) <- names(Cluster_markers)
 #Cluster_markers <- readRDS('Results/old_samples/Cluster_markers_mergedOldSamples.rds')
 #saveRDS(Cluster_markers_final, 'Results/new_samples/Cluster_markers_final.rds')
 saveRDS(Cluster_markers_final, paste0('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_cluster_markers_res0.6.rds'))
-
+Cluster_markers_final <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_cluster_markers_res0.6.rds')
 
 #### saving markers #####
 dir.create(paste0('~/rat_sham_sn_data/standardQC_results/cluster_markers_res0.6/'))

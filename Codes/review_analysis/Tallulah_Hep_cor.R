@@ -143,3 +143,9 @@ merge_mouse_rat = merge_mouse_rat[-c(1, 2)] #10
 pheatmap::pheatmap(cor(merge_mouse_rat)[1:3, 4:ncol(merge_mouse_rat)])
 
 
+
+
+
+
+
+

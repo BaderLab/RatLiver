@@ -225,3 +225,21 @@ save(mes_data, sCVdata_list,
 
 
 
+
+load(sham_sn_merged_scCLustViz_object)
+runShiny(
+  ## write the path to the file bellow:
+  filePath= sham_sn_merged_scCLustViz_object,
+  outPath="./",
+  # Save any further analysis performed in the app to the
+  # working directory rather than library directory.
+  annotationDB="org.Rn.eg.db",
+  # This is an optional argument, but will add annotations.
+  imageFileType="png"
+  #Set the file format of any saved figures from the app.
+)
+
+
+
+
+

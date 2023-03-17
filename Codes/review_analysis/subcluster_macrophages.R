@@ -87,6 +87,45 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1.7,alph
   theme_classic()+scale_color_manual(values = c(colorPalatte))+ggtitle(paste0('resolution: ', res))#colorPalatte
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=sample_name))+geom_point(size=1.3,alpha=0.7)+theme_classic()
 
+########################################################################################
+########### Make the scClustViz object of the macrophage subcluster ##################
+########################################################################################
+
+resolutions = seq(0.6, 1.4, 0.2)
+for (res in resolutions){
+  mac_data <- FindClusters(mac_data, resolution = res, verbose = FALSE)
+}
+
+
+head(mac_data@meta.data)
+your_cluster_results =data.frame(mac_data@meta.data[,colnames(mac_data@meta.data) %in% paste0('SCT_snn_res.', resolutions)])
+head(your_cluster_results)
+
+
+sCVdata_list <- CalcAllSCV(
+  inD=mac_data,
+  clusterDF=your_cluster_results,
+  assayType='SCT', #specify assay slot of data
+  DRforClust="harmony",#reduced dimensions for silhouette calc
+  #exponent=exp(1), #log base of normalized data
+  #pseudocount=1,
+  #DRthresh=0.5, #gene filter - minimum detection rate
+  testAll=T, #stop testing clusterings when no DE between clusters
+  #FDRthresh=0.005,
+  #calcSil=F, #use cluster::silhouette to calc silhouette widths
+  calcDEvsRest=T,
+  calcDEcombn= T #
+)
+
+sham_sn_merged_scCLustViz_object =  '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_macrophage_subclusters_sCVdata.RData' ### find the results on run1
+#saveRDS(sCVdata_list, '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_sCVdata.rds') ### find the results on run1
+save(mac_data, sCVdata_list, 
+     file=sham_sn_merged_scCLustViz_object) ## new data scClustViz object
+
+
+
+
+
 ######################################################################
 #################### sample contribution in each cluster
 

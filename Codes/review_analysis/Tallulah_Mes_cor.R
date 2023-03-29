@@ -43,6 +43,7 @@ lapply(cluster_average_exp, dim)
 cluster_average_exp_df = do.call(cbind,cluster_average_exp)
 #colnames(cluster_average_exp_df) = paste0('cluster_',names(cluster_average_exp))
 colnames(cluster_average_exp_df) = names(cluster_average_exp)
+
 head(cluster_average_exp_df)
 
 ## scale and center all the genes in the matrix
@@ -60,7 +61,7 @@ head(cluster_average_exp_df)
 
 human_data = merge(cluster_average_exp_df, rat_to_human_genes, by.x='human_ID', by.y='human_genes')
 head(human_data)
-
+dim(human_data)
 
 
 ########################################################################
@@ -68,37 +69,49 @@ head(human_data)
 ########################################################################
 ## importing the gene expression data
 merged_samples = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
-Resolution = 0.6
+Resolution =  2.5 #0.6
 resolutions = Resolution
 merged_samples <- FindClusters(merged_samples, resolution = Resolution, verbose = FALSE)
 table(merged_samples$SCT_snn_res.0.6)
+table(merged_samples$SCT_snn_res.2.5)
+merged_samples$cluster = as.character(merged_samples$SCT_snn_res.2.5)
 
-
-
-merged_samples <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
 table(merged_samples$cluster, merged_samples$annot_IM) ## cluster 8 seems to be the macrophage population
-mes_cluster_num = c(5,7)
+#mes_cluster_num = c(5, 7) # 0.6 res
+mes_cluster_num = c(24, 29) # 2.5 res
 
 ##################################################################
 ######## Subclustering the mesenchymal/endothelilal cluster
 
 mes_data = merged_samples[,merged_samples$cluster %in% mes_cluster_num]
+dim(mes_data)
 mes_data_meta = mes_data@meta.data
 DefaultAssay(mes_data) <- 'RNA'
 mes_data@assays$SCT <- NULL
 
 mes_data = SCTransform(mes_data, vst.flavor = "v2", verbose = TRUE)
+
+mes_data[["pca"]] <- NULL
+mes_data[["harmony"]] <- NULL
+mes_data[["umap"]] <- NULL
+mes_data[["umap_h"]] <- NULL
+mes_data@meta.data <- mes_data@meta.data[,!grepl('SCT_snn', colnames(mes_data@meta.data))]
+
 mes_data <- RunPCA(mes_data,verbose=T)
 plot(100 * mes_data@reductions$pca@stdev^2 / mes_data@reductions$pca@misc$total.variance,
      pch=20,xlab="Principal Component",ylab="% variance explained",log="y")
+table(mes_data$sample_name)
+
+
 mes_data <- RunHarmony(mes_data, group.by.vars = "sample_name", assay.use="RNA")
 
+
 res = 1.0
-mes_data <- RunUMAP(mes_data, reduction = "harmony", dims = 1:30, verbose = FALSE) %>%
+mes_data <- RunUMAP(mes_data, reduction = "harmony", dims = 1:30, verbose = FALSE, reduction.key = "UMAP_") %>%
   FindNeighbors(reduction = "harmony", dims = 1:30, verbose = FALSE) %>%
   FindClusters(resolution = res, verbose = FALSE)
 
-dim(mes_data)
+mes_data
 markers = c('Lyve1')
 i = 1
 gene_name = markers[i] 
@@ -107,7 +120,7 @@ df_umap <- data.frame(UMAP_1=getEmb(mes_data, 'umap')[,1],
                       library_size= mes_data$nCount_RNA, 
                       mito_perc=mes_data$mito_perc, 
                       n_expressed=mes_data$nFeature_RNA,
-                      cluster=mes_data$cluster, 
+                      cluster=mes_data$SCT_snn_res.1, 
                       cell_status = mes_data$cell_status,
                       nuclear_fraction=mes_data$nuclear_fraction, 
                       Alb=GetAssayData(mes_data)['Alb',], 
@@ -121,7 +134,7 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=a_gene))+geom_point(size=1.5, alph
 
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1.5, alpha=0.6)+theme_classic()
 
-saveRDS(mes_data, '~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data.rds')
+#saveRDS(mes_data, '~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data_res2.5_update.rds')
 ###################################################################
 
 
@@ -191,7 +204,7 @@ pheatmap::pheatmap(cor(merge_mouse_rat)[1:3, 4:ncol(merge_mouse_rat)])
 #################
 mes_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data.rds')
 
-resolutions = seq(0.6, 1.4, 0.2)
+resolutions = seq(0.4, 1.6, 0.2)
 for (res in resolutions){
   mes_data <- FindClusters(mes_data, resolution = res, verbose = FALSE)
 }

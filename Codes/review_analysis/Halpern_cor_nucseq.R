@@ -22,20 +22,27 @@ get_scaled_by_gene <- function(x){
 
 ## importing the gene expression data
 merged_samples = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
-Resolution = 0.6
+Resolution = 2.5
 resolutions = Resolution
 merged_samples <- FindClusters(merged_samples, resolution = Resolution, verbose = FALSE)
-table(merged_samples$SCT_snn_res.0.6)
+table(merged_samples$SCT_snn_res.2.5)
 
 rat_HVGs <- VariableFeatures(merged_samples)
 head(merged_samples)
-table(merged_samples$annot_IM_g,merged_samples$SCT_snn_res.0.6)
-table(merged_samples$SCT_snn_res.0.6[merged_samples$annot_IM_g == 'Hep'])
-nucseq_heps = as.character(c(0:4, 6, 9:11))
+pheatmap(table(merged_samples$annot_IM_g,merged_samples$SCT_snn_res.2.5))
+table(merged_samples$SCT_snn_res.2.5[merged_samples$annot_IM_g == 'Hep'])
+nucseq_heps = as.character(c(0:4, 6, 9:11)) ## resolution 0.6
+
+### Hep clusters for resolution 2.5
+high_MT_heps = as.character(c(22, 18, 14, 28))
+nucseq_heps = c("27", "25", "0", "7", "16", "10", "4", "9", "2", "5", "21","20",
+  "23", "3", "8", "13", "32", "26", "12", "17", "7","6", "1", "15", "31")
+nucseq_heps = c(nucseq_heps, high_MT_heps)
+
 
 ##### annotate the hepatocytes based on the mouse zonation layers
 
-merged_samples$cluster <- as.character(merged_samples$SCT_snn_res.0.6)
+merged_samples$cluster <- as.character(merged_samples$SCT_snn_res.2.5)
 
 
 
@@ -175,8 +182,8 @@ p0=ggplot2::ggplot(merged_hepExp_mouseLayer_num.m, aes(x=variable, y=value, colo
 print(p0)
 
 dir_name = '~/rat_sham_sn_data/standardQC_results/Halpern_cor/' 
-dir.create(dir_name)
-#saveRDS(merged_hepExp_mouseLayer_num, paste0(dir_name, 'merged_sn_hepExp_mouseLayer.rds'))
+#dir.create(dir_name)
+#saveRDS(merged_hepExp_mouseLayer_num, paste0(dir_name, 'merged_sn_hepExp_mouseLayer_res2.5_damagedHeps_included.rds'))
 
 ### calculating correlations
 hepExp_mouseLayer_rcorr <- rcorr(as.matrix(merged_hepExp_mouseLayer_num), type="pearson")

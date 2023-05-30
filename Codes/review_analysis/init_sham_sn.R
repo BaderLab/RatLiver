@@ -35,7 +35,7 @@ LIB_SIZE_CUT_OFF = 1000
 MIT_CUT_OFF = 10
 NUM_GENES_DETECTED = 100
 
-i = 4
+i = 3
 sample_name = sample_names[i]
 sample_name
 
@@ -181,7 +181,10 @@ ggplot(df_filt, aes(x=n_expressed, y=mito_perc, color=library_size))+geom_point(
 
 
 
-data = SCTransform(data, vst.flavor = "v2", verbose = TRUE)
+data = SCTransform(data, vst.flavor = "v2", verbose = TRUE, 
+                   return.only.var.genes =FALSE,
+                   variable.features.n=nrow(data))
+
 data <- RunPCA(data,verbose=T)
 plot(100 * data@reductions$pca@stdev^2 / data@reductions$pca@misc$total.variance,
      pch=20,xlab="Principal Component",ylab="% variance explained",log="y")
@@ -214,19 +217,21 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=mito_perc))+geom_point(alpha=0.4)+
   scale_color_viridis(direction = -1)+ggtitle(sample_name)
 
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(alpha=0.3)+theme_classic()+ggtitle(sample_name)
-saveRDS(data, paste0('~/rat_sham_sn_data/standardQC_results/',sample_name , '_data_afterQC.rds'))
 
-
+saveRDS(data, paste0('~/rat_sham_sn_data/standardQC_results/',sample_name , '_data_afterQC_allFeatures.rds'))
+rm(data)
+rm(data_raw)
+gc()
 
 ############################################################
 ############## Integrating the filtered files ##############
 ########################################################
 
-list_files = list.files(path = '~/rat_sham_sn_data/standardQC_results', pattern ='_data_afterQC.rds', include.dirs = T, full.names = T)
+list_files = list.files(path = '~/rat_sham_sn_data/standardQC_results', pattern ='_data_afterQC_allFeatures.rds', include.dirs = T, full.names = T)
 files_rds <- lapply(list_files, readRDS)
 
-sample_names = list.files(path = '~/rat_sham_sn_data/standardQC_results', pattern ='_data_afterQC.rds')
-sample_names = gsub('_3pr_v3_data_afterQC.rds', '', sample_names)
+sample_names = list.files(path = '~/rat_sham_sn_data/standardQC_results', pattern ='_data_afterQC_allFeatures.rds')
+sample_names = gsub('_3pr_v3_data_afterQC*.rds', '', sample_names)
 sample_names = gsub('MacParland__SingleNuc_', '', sample_names)
 strain = c('DA', 'DA', 'LEW', 'LEW')
 
@@ -246,16 +251,19 @@ merged_data <- merge(files_rds[[1]], c(files_rds[[2]], files_rds[[3]], files_rds
                      project = names(files_rds), 
                      merge.data = TRUE)
 dim(merged_data)
-
+'Cd68' %in% rownames(merged_data, 'scale.data')
 Idents(merged_data) = merged_data$sample_name
 
+merged_data_backup <- merged_data
 merged_data <- merged_data_backup
 
 
 ### run the pipeline without this line and see how it would differ - could not run pca and find variable genes
 #### scaling the merged data instead of SCTransform does not solve the issue
 ### current pipeline: we are normlizing the individual samples first - merging them - normalizing the merged sample 
-merged_data = SCTransform(merged_data, vst.flavor = "v2", verbose = TRUE) 
+merged_data = SCTransform(merged_data, vst.flavor = "v2", verbose = TRUE,
+                          return.only.var.genes =FALSE,
+                          variable.features.n=nrow(data)) 
 #merged_data <- ScaleData(merged_data)
 #merged_data <- FindVariableFeatures(merged_data) #SCT assay is comprised of multiple SCT models
 
@@ -275,13 +283,14 @@ merged_data <- RunUMAP(merged_data, reduction = "harmony", dims = 1:30, reductio
   FindClusters(resolution = 0.6, verbose = FALSE)
 
 
-merged_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
-merged_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC.rds')
 
 
-Resolution = 0.6
+Resolution = 2.5
 merged_data <- FindClusters(merged_data, resolution = Resolution, verbose = FALSE)
+#saveRDS(merged_data, '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC_allFeatures.rds')
 
+merged_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
+merged_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC_allFeatures.rds')
 
 
 markers1 = c('Ptprc','Cd68', 'Cd163', 'Mrc1', 'Clec4f', 'Siglec5')

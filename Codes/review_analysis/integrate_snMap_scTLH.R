@@ -1,3 +1,6 @@
+source('Codes/Functions.R')
+Initialize()
+
 ##### merging the TLH and snRNA-seq maps
 ### importing the normalized samples
 #### scale them individually 
@@ -78,17 +81,38 @@ merged_data$annotation2 = ifelse(is.na(merged_data$annotation), merged_data$anno
 table(merged_data$annotation2)
 merged_data$annotation2_g = gsub("\\s*\\([^\\)]+\\)","",as.character(merged_data$annotation2))
 
-umap_df = data.frame(annotation=merged_data$annotation2,
-                     annotation_g=merged_data$annotation2_g,
+
+
+
+periportal_genes = c('Alb', 'Apoa1', 'Apoc1', 'Apoc3', 'Apoe', 'Fabp1', 'Itih4', 'Orm1', 'Pigr', 'Serpina1', 'Tf', 'Ttr')
+pericentral_genes = c('Ahr', 'Akr1c1', 'Cyp27a1', 'Cyp7a1', 'Glul', 'Notum', 'Rcan1')
+Central_Midzonal_genes = c('Cyp2e1', 'Cyp2f4') #Cyp2fa1 is not expressed
+Interzonal_genes =  c('Mta2', 'Hamp') # Mt2a is not a gene?
+
+i = 2
+gene_name = Interzonal_genes[i]
+
+umap_df = data.frame(#annotation=merged_data$annotation2,
+                     #annotation_g=merged_data$annotation2_g,
                      sample_name =merged_data$sample_name,
                      strain=merged_data$strain,
+                     gene=GetAssayData(merged_data)[gene_name,],
                      cluster=merged_data$SCT_snn_res.0.6,
                      data=ifelse(grepl(pattern = '*_CST', merged_data$sample_name), 'snRNA-seq', 'scRNA-seq'),
                      Embeddings(merged_data, reduction = 'umap'),
                      Embeddings(merged_data, reduction = 'umap_h'))
 
-
+head(umap_df)
 ##### making UMAP plots ####
+ggplot(umap_df, aes(x=umap_h_1, y=umap_h_2, color=gene))+geom_point(alpha=0.6,size=1.4)+
+  scale_color_viridis('Expression\nValue', direction = -1)+theme_classic()+
+  theme(text = element_text(size=16.5),
+        plot.title = element_text(hjust = 0.5),
+        legend.title=element_text(size = 10))+
+  ggtitle(paste0(gene_name))+xlab('UMAP_1')+ylab('UMAP_2')
+
+
+
 ggplot(umap_df, aes(x=UMAP_1, y=UMAP_2, color=sample_name))+geom_point(size=1,alpha=0.6)+
   theme_classic()+ scale_color_manual(values = colorPalatte)
 ggplot(umap_df, aes(x=UMAP_1, y=UMAP_2, color=data))+geom_point(size=1.32,alpha=0.3)+theme_classic()
@@ -137,5 +161,45 @@ geom_bar(stat="identity",color='black')+theme_classic()+
     legend.title = element_blank()) +  xlab('')+scale_fill_manual(values=colorPalatte)
 
 
+
+################################################################################
+merged_data <- readRDS('~/rat_sham_sn_data/standardQC_results/TLH_snMap_merged.rds')
+
+merged_data@meta.data <- merged_data@meta.data[,!grepl('SCT_snn', colnames(merged_data@meta.data))]
+table(merged_data$cluster)
+
+head(merged_data)
+
+resolutions = seq(0.2, 1.2, 0.2)
+for (res in resolutions){
+  merged_data <- FindClusters(merged_data, resolution = res, verbose = FALSE)
+}
+
+
+head(merged_data@meta.data)
+your_cluster_results =data.frame(merged_data@meta.data[,colnames(merged_data@meta.data) %in% paste0('SCT_snn_res.', resolutions)])
+head(your_cluster_results)
+
+
+sCVdata_list <- CalcAllSCV(
+  inD=merged_data,
+  clusterDF=your_cluster_results,
+  assayType='SCT', #specify assay slot of data
+  DRforClust="harmony",#reduced dimensions for silhouette calc
+  #exponent=exp(1), #log base of normalized data
+  #pseudocount=1,
+  #DRthresh=0.5, #gene filter - minimum detection rate
+  testAll=T, #stop testing clusterings when no DE between clusters
+  #FDRthresh=0.005,
+  #calcSil=F, #use cluster::silhouette to calc silhouette widths
+  calcDEvsRest=T,
+  calcDEcombn= T #
+)
+
+sham_sn_merged_scCLustViz_object =  '~/rat_sham_sn_data/standardQC_results/TLH_snMap_merged.RData' ### find the results on run1
+#saveRDS(sCVdata_list, '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_sCVdata.rds') ### find the results on run1
+#save(merged_data, sCVdata_list, 
+#     file=sham_sn_merged_scCLustViz_object) ## new data scClustViz object
+load(sham_sn_merged_scCLustViz_object)
 
 

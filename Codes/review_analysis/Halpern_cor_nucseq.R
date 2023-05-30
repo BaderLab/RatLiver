@@ -250,29 +250,3 @@ ggplot(umap_emb, aes(x=UMAP_1, y=UMAP_2))+geom_point(aes(color=cluster),alpha=0.
 
 
 
-
-
-###### checking if the important markers are expressed and their pattern in this data
-### importing the input markers and removing the 
-Total_markers_converted_df <- readRDS('Data/Total_markers_converted_df.rds')
-Total_markers_names <- names(Total_markers_converted_df)
-
-### markers which aren't present in the expression matrix
-Total_markers_converted_df <- sapply(1:length(Total_markers_converted_df),
-                                     function(i){
-                                       a_mapped_markers_df <- Total_markers_converted_df[[i]]
-                                       a_mapped_markers_df <- a_mapped_markers_df[a_mapped_markers_df$rnorvegicus_homolog_ensembl_gene %in% rownames(merged_sample),]
-                                       return(a_mapped_markers_df)
-                                     }, simplify = F)
-
-names(Total_markers_converted_df) <- Total_markers_names
-plasma_cells_DE[plasma_cells_DE %in% Total_markers_converted_df[['Hepatocytes']]$symbol]
-names(Total_markers_converted_df)
-
-a_cluster_merged_markers <- data.frame(merged_markers$cluster_0)
-
-a_cell_type_markers <- Total_markers_converted_df$KCs$rnorvegicus_homolog_ensembl_gene
-
-a_cluster_merged_markers$V2[a_cluster_merged_markers$ensemble_ids %in% a_cell_type_markers]
-
-

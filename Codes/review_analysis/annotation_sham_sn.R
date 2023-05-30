@@ -35,18 +35,28 @@ gene_names = c('Ptprc', 'Sox9', 'Acta2', 'Cyp2e1', 'Pck1', 'Cyp1a2')
 
 merged_samples <- FindNeighbors(merged_samples,reduction="harmony",verbose=T)
 
-Resolution = 0.6
+Resolution = 2.5 #0.6
 merged_samples <- FindClusters(merged_samples, resolution = Resolution, verbose = FALSE)
 
+a_cluster = 20
+is_a_cluster = merged_samples$SCT_snn_res.2.5 == a_cluster
+
+periportal_genes = c('Alb', 'Apoa1', 'Apoc1', 'Apoc3', 'Apoe', 'Fabp1', 'Itih4', 'Orm1', 'Pigr', 'Serpina1', 'Tf', 'Ttr')
+pericentral_genes = c('Ahr', 'Akr1c1', 'Cyp27a1', 'Cyp7a1', 'Glul', 'Notum', 'Rcan1')
+Central_Midzonal_genes = c('Cyp2e1', 'Cyp2f4') #Cyp2fa1 is not expressed
+Interzonal_genes =  c('Mta2', 'Hamp') # Mt2a is not a gene?
+
+rownames(merged_samples)[grep('Mt', rownames(merged_samples))]
 
 i = 7
-gene_name = gene_names[i]
+gene_name = pericentral_genes[i]
 df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap_h')[,1], 
                       UMAP_2=getEmb(merged_samples, 'umap_h')[,2], 
                       library_size= merged_samples$nCount_RNA, 
                       mito_perc=merged_samples$mito_perc, 
                       n_expressed=merged_samples$nFeature_RNA,
-                      cluster=merged_samples$SCT_snn_res.0.6, 
+                      cluster=merged_samples$SCT_snn_res.2.5, 
+                      is_a_cluster=is_a_cluster,
                       cell_status = merged_samples$cell_status,
                       nuclear_fraction=merged_samples$nuclear_fraction, 
                       Alb=GetAssayData(merged_samples)['Alb',], 
@@ -64,7 +74,7 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=gene))+geom_point(alpha=0.6,size=1
 
 
 
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1,alpha=0.6)+theme_classic()
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=is_a_cluster))+geom_point(size=1,alpha=0.6)+theme_classic()
 
 ##################################################################
 ############## calculating the cluster average expression of the new data ############## 

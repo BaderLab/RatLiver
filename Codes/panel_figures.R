@@ -83,22 +83,37 @@ RT_genes = rownames(merged_samples)[grep('Ptgdr', rownames(merged_samples))]
 
 
 cluster_num = '4'
-gene_name = 'Sirpa'  #Sirpa
-rownames(merged_samples)[grep(gene_name, rownames(merged_samples))] ## check if the gene is present in the dataset
 
-df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1], 
-                      UMAP_2=getEmb(merged_samples, 'umap')[,2], 
-                      expression_val=GetAssayData(merged_samples)[gene_name,],
-                      a_cluster=merged_samples$cluster==cluster_num)
+gene_list = c("Alb", "Apoa1", "Apoc1", "Apoc3", "Apoe", "Fabp1", "Itih4", "Orm1", "Pigr",
+              "Serpina1", "Tf", "Ttr", "Sds", "Pck1", "Arg1", 
+              "Ahr", "Akr1c1", "Cyp27a1", "Cyp7a1", "Glul", "Notum", "Rcan1", 
+              "Cyp2e1", "Hamp") #"Cyp2fa1", "Mt2a"
 
+gene_list %in% rownames(merged_samples)
 
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=expression_val))+
-  geom_point(alpha=0.6,size=1.2)+
-  scale_color_viridis('Expression\nValue', direction = -1)+theme_classic()+
-  theme(text = element_text(size=16.5),
-        plot.title = element_text(hjust = 0.5),
-        legend.title=element_text(size = 10))+
-  ggtitle(paste0(gene_name)) 
+length(gene_list)
+pdf('TLH_marker_umaps.pdf')
+for(i in 1:length(gene_list)){
+  gene_name = gene_list[i]  #Sirpa
+  rownames(merged_samples)[grep(gene_name, rownames(merged_samples))] ## check if the gene is present in the dataset
+  
+  df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1], 
+                        UMAP_2=getEmb(merged_samples, 'umap')[,2], 
+                        expression_val=GetAssayData(merged_samples)[gene_name,],
+                        a_cluster=merged_samples$cluster==cluster_num)
+  
+  
+  p=ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=expression_val))+
+    geom_point(alpha=0.6,size=1.2)+
+    scale_color_viridis('Expression\nValue', direction = -1)+theme_classic()+
+    theme(text = element_text(size=16.5),
+          plot.title = element_text(hjust = 0.5),
+          legend.title=element_text(size = 10))+
+    ggtitle(paste0(gene_name)) 
+  print(p)
+}
+dev.off()
+
 
 
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=a_cluster))+

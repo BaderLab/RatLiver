@@ -12,6 +12,47 @@ library(patchwork)
 library(dplyr)
 library(nebula)
 
+
+library(gridExtra)
+library(grid)
+grid.ftable <- function(d, padding = unit(4, "mm"), ...) {
+  
+  nc <- ncol(d)
+  nr <- nrow(d)
+  
+  ## character table with added row and column names
+  extended_matrix <- cbind(c("", rownames(d)),
+                           rbind(colnames(d),
+                                 as.matrix(d)))
+  
+  ## string width and height
+  w <- apply(extended_matrix, 2, strwidth, "inch")
+  h <- apply(extended_matrix, 2, strheight, "inch")
+  
+  widths <- apply(w, 2, max)
+  heights <- apply(h, 1, max)
+  
+  padding <- convertUnit(padding, unitTo = "in", valueOnly = TRUE)
+  
+  x <- cumsum(widths + padding) - 0.5 * padding
+  y <- cumsum(heights + padding) - padding
+  
+  rg <- rectGrob(x = unit(x - widths/2, "in"),
+                 y = unit(1, "npc") - unit(rep(y, each = nc + 1), "in"),
+                 width = unit(widths + padding, "in"),
+                 height = unit(heights + padding, "in"))
+  
+  tg <- textGrob(c(t(extended_matrix)), x = unit(x - widths/2, "in"),
+                 y = unit(1, "npc") - unit(rep(y, each = nc + 1), "in"),
+                 just = "center")
+  
+  g <- gTree(children = gList(rg, tg), ...,
+             x = x, y = y, widths = widths, heights = heights)
+  
+  grid.draw(g)
+  invisible(g)
+}
+
 ## check their tutorial
 ## https://github.com/lhe17/nebula
 
@@ -22,8 +63,19 @@ library(nebula)
 merged_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
 macrophage_ids = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_macrophage_IDs.rds')
 
-table(merged_samples$cluster, merged_samples$annot_IM) ## cluster 8 seems to be the macrophage population
+
+
+Resolution = 2.5
+merged_data <- FindClusters(merged_data, resolution = Resolution, verbose = FALSE)
+table(merged_data$SCT_snn_res.2.5)
+merged_data$clusters = merged_samples$SCT_snn_res.2.5
+
+table(merged_data$cluster, merged_data$annot_IM) ## cluster 8 seems to be the macrophage population
+table(merged_data$clusters, merged_data$annot_IM) 
 mac_cluster_num = 8
+mac_cluster_num = 19
+
+macrophage_ids = colnames(merged_data)[merged_data$clusters == mac_cluster_num]
 
 merged_data <- merged_data[,colnames(merged_data)%in%macrophage_ids]
 dim(merged_data)
@@ -47,28 +99,42 @@ data_g = group_cell(count=sample_data$count,id=sample_data$sid,pred=df)
 
 ### use library size as an offset if you're using the count data. If not, each cell will be treated equally
 re = nebula(sample_data$count,sample_data$sid,pred=df,offset=sample_data$offset) 
-re <- readRDS('~/rat_sham_sn_data/standardQC_results/nebula_nonInfMac_subcluster_results.rds')
+#re <- readRDS('~/rat_sham_sn_data/standardQC_results/nebula_nonInfMac_subcluster_results.rds')
 
 re.df = data.frame(re$summary)
 re.df = re.df[,c(2,6,8)]
 head(re.df[order(re.df$logFC_strainLEW, decreasing = T),],30)
 head(re.df[order(re.df$p_strainLEW, decreasing = F),],20)
-
+re.df$score = -log10(re.df$p_strainLEW) * re.df$logFC_strainLEW
+head(re.df[order(re.df$score, decreasing = T),],20)
 
 
 write.csv(re.df[order(re.df$p_strainLEW, decreasing = F),], 
           '~/rat_sham_sn_data/standardQC_results/nebula_nonInfMac_subcluster_results.csv')
 
+table_vis = data.frame(gene=re.df$gene, pval_LEW=re.df$p_strainLEW, logFC_LEW=re.df$logFC_strainLEW)
+table_vis$score = -log10(table_vis$pval_LEW) * table_vis$logFC_LEW
+table_vis = table_vis[order(table_vis$score, decreasing = T),]
 
-head(re$summary)
-re.df.ord = re.df[order(re.df$logFC_strainLEW, decreasing = T),]
-re.df.ord = re.df.ord[re.df.ord$p_strainLEW < 0.05,]
-table_vis = head(re.df.ord, 50)
 
-table_vis = head(re.df[order(re.df$p_strainLEW, decreasing = F),],20)
-table_vis = data.frame(gene=table_vis$gene, pval_LEW=table_vis$p_strainLEW, logFC_LEW=table_vis$logFC_strainLEW)
-gridExtra::grid.table(table_vis)
+colnames(table_vis)=c('Gene', 'p value', 'logFC(LEW/DA)', 'score')
+head(table_vis, 20)
+gridExtra::grid.table(head(table_vis, 20))
 dev.off()
+
+
+table_vis <- table_vis[1:20,-4]
+grid.newpage()
+table_vis$`logFC(LEW/DA)` = round(table_vis$`logFC(LEW/DA)`, 2) 
+table_vis$`p value` = formatC(table_vis$`p value`, format = "e", digits = 2)
+row.names(table_vis) = table_vis$Gene
+table_vis = table_vis[,-1]
+grid.ftable(table_vis, gp = gpar(fill = rep(c("white", "white"), each = 6)),)
+
+
+
+
+
 
 df_umap <- data.frame(UMAP_1=getEmb(merged_data, 'umap')[,1], 
                       UMAP_2=getEmb(merged_data, 'umap')[,2], 
@@ -82,7 +148,7 @@ df_umap <- data.frame(UMAP_1=getEmb(merged_data, 'umap')[,1],
                       nuclear_fraction=merged_data$nuclear_fraction, 
                       Alb=GetAssayData(merged_data)['Alb',], 
                       #gene=GetAssayData(merged_data)[gene_name,],
-                      is_cluster=ifelse(merged_data$SCT_snn_res.1 == a_cluster,'1','0'),
+                      #is_cluster=ifelse(merged_data$SCT_snn_res.1 == a_cluster,'1','0'),
                       sample_name = merged_data$sample_name, 
                       strain = merged_data$strain)
 

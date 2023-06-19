@@ -128,13 +128,17 @@ merged_samples = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_a
 Resolution =  2.5 #0.6
 resolutions = Resolution
 merged_samples <- FindClusters(merged_samples, resolution = Resolution, verbose = FALSE)
-table(merged_samples$SCT_snn_res.0.6)
 table(merged_samples$SCT_snn_res.2.5)
 merged_samples$cluster = as.character(merged_samples$SCT_snn_res.2.5)
 
+annot_info <- read.csv('figure_panel/Annotations_SingleNuc_Rat_June_8_2023.csv')
+colnames(annot_info)[1] = 'clusters'
+annot_info(annot_info$label)
+
 table(merged_samples$cluster, merged_samples$annot_IM) ## cluster 8 seems to be the macrophage population
 #mes_cluster_num = c(5, 7) # 0.6 res
-mes_cluster_num = c(24, 29) # 2.5 res
+# mes_cluster_num = c(24, 29) # 2.5 res - 24 mesenchymal cluster, 29 cholangiocyte cluster
+mes_cluster_num = c(24) # 2.5 res
 
 ##################################################################
 ######## Subclustering the mesenchymal/endothelilal cluster
@@ -167,9 +171,9 @@ mes_data <- RunUMAP(mes_data, reduction = "harmony", dims = 1:30, verbose = FALS
   FindNeighbors(reduction = "harmony", dims = 1:30, verbose = FALSE) %>%
   FindClusters(resolution = res, verbose = FALSE)
 
-mes_data
-markers = c('Lyve1')
-i = 1
+mes_data$SCT_snn_res.1
+markers =  c( 'Ecm1', 'Col3a1', 'Colec10', 'Colec11')
+i = 2
 gene_name = markers[i] 
 df_umap <- data.frame(UMAP_1=getEmb(mes_data, 'umap')[,1], 
                       UMAP_2=getEmb(mes_data, 'umap')[,2], 
@@ -190,7 +194,7 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=a_gene))+geom_point(size=1.5, alph
 
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1.5, alpha=0.6)+theme_classic()
 
-#saveRDS(mes_data, '~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data_res2.5_update.rds')
+saveRDS(mes_data, '~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data_res2.5_cluster24Only.rds')
 ###################################################################
 
 
@@ -262,7 +266,9 @@ pheatmap::pheatmap(cor(merge_mouse_rat)[1:3, 4:ncol(merge_mouse_rat)])
 
 #################
 #mes_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data.rds')
-mes_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data_res2.5_update.rds')
+#mes_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data_res2.5_update.rds')
+mes_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data_res2.5_cluster24Only.rds')
+
 mes_data@meta.data <- mes_data@meta.data[,!grepl('SCT_snn', colnames(mes_data@meta.data))]
 table(mes_data$cluster)
 
@@ -294,8 +300,12 @@ sCVdata_list <- CalcAllSCV(
   calcDEcombn= T #
 )
 
-sham_sn_merged_scCLustViz_object =  '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_mesenchymal_subclusters_sCVdata_res2.5_update.RData' ### find the results on run1
+#sham_sn_merged_scCLustViz_object =  '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_mesenchymal_subclusters_sCVdata_res2.5_update.RData' ### find the results on run1
+sham_sn_merged_scCLustViz_object =  '~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data_res2.5_cluster24Only.RData' 
 #saveRDS(sCVdata_list, '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_sCVdata.rds') ### find the results on run1
+
+
+
 save(mes_data, sCVdata_list, 
      file=sham_sn_merged_scCLustViz_object) ## new data scClustViz object
 

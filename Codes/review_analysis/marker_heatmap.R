@@ -11,8 +11,6 @@ library(reshape2)
 merged_samples_sub = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
 merged_samples_all = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC_allfeatures.rds')
 
-merged_samples_test <- merged_samples
-(merged_samples_test)
 
 'Cd68'%in% rownames(GetAssayData(merged_samples_all, 'scale.data'))
 'Cd68'%in% rownames(GetAssayData(merged_samples_sub, 'scale.data'))
@@ -38,19 +36,20 @@ table(merged_samples_sub$SCT_snn_res.2.5)
 merged_samples_all$SCT_snn_res.2.5 = merged_samples_sub$SCT_snn_res.2.5
 merged_samples = merged_samples_all
 
-CV_Hep = c(23, 8, 3, 13, 32, 26, 12, 17, 1) #removed 15
-CV_Hep_Markers = c('Akr1c1', 'Ahr', 'Cyp27a1', 'Cyp7a1', 'Cyp8b1', 'Glul', 'Notum', 'Rcan1', 'Cyp2e1', 'Cyp2f4')
+CV_Hep = c(23, 8, 3, 13, 32, 26, 12, 17, 1, 15) 
+CV_Hep_Markers = c('Akr1c1', 'Ahr', 'Glul', 
+                   'Notum', 'Rcan1', 'Cyp2f4', 'Cyp27a1', 'Cyp7a1', 'Cyp2e1', 'Cyp8b1')
 
 other_Hep = c(21, 6, 20, 31, 9)
 other_Hep_Markers = c('Mt2A', 'Hamp')
 
-Periportal_Hep = c(27, 15, 0, 4, 10, 16, 7, 2, 5)
+Periportal_Hep = c(27, 0, 4, 10, 16, 7, 2, 5) #removed 15
 Periportal_Hep_Markers=c('Alb', 'Apoa1', 'Apoc1', 'Apoc3', 'Apoe', 'Fabp1', 
                          'Itih4', 'Orm1', 'Pigr', 'Serpina1', 'Tf', 'Ttr') 
 
 
 Cholagiocytes = 29
-Cholagiocytes_Markers = c('Aqp1', 'Epcam', 'Sox9',  'Anpep', 'Anxa4')
+Cholagiocytes_Markers = c('Epcam', 'Sox9', 'Anxa4')
 
 
 General_Macrophage_Markers = c('Cd68', 'Clec4f')
@@ -85,9 +84,9 @@ dim(merged_samples)
 
 annot = c(rep(NA, ncol(merged_samples_subset)))
 sapply(1:ncol(merged_samples_subset) , function(i){
-  if (merged_samples_subset$SCT_snn_res.2.5[i] %in% CV_Hep) annot[i] <<- 'cvHep'
+  if (merged_samples_subset$SCT_snn_res.2.5[i] %in% CV_Hep) annot[i] <<- 'Hep 1'
   if (merged_samples_subset$SCT_snn_res.2.5[i] %in% other_Hep) annot[i] <<- 'Hep'
-  if (merged_samples_subset$SCT_snn_res.2.5[i] %in% Periportal_Hep) annot[i] <<- 'ppHep'
+  if (merged_samples_subset$SCT_snn_res.2.5[i] %in% Periportal_Hep) annot[i] <<- 'Hep 3'
   if (merged_samples_subset$SCT_snn_res.2.5[i] %in% Cholagiocytes) annot[i] <<- 'cholagiocyte'
   if (merged_samples_subset$SCT_snn_res.2.5[i] %in% Non_inf_mac) annot[i] <<- 'nonInfMac'
   if (merged_samples_subset$SCT_snn_res.2.5[i] %in% Inf_mac) annot[i] <<- 'InfMac'
@@ -185,27 +184,27 @@ rownames(cluster_average_exp_df_scaled)
 
 anno_df = c(rep(NA, ncol(cluster_average_exp_df_scaled)))
 sapply(1:ncol(merged_samples_subset) , function(i){
-  if (colnames(cluster_average_exp_df_scaled)[i] %in% CV_Hep) anno_df[i] <<- 'cvHep'
-  if (colnames(cluster_average_exp_df_scaled)[i] %in% other_Hep) anno_df[i] <<- 'Hep'
-  if (colnames(cluster_average_exp_df_scaled)[i] %in% Periportal_Hep) anno_df[i] <<- 'ppHep'
-  if (colnames(cluster_average_exp_df_scaled)[i] %in% Cholagiocytes) anno_df[i] <<- 'cholagiocyte'
-  if (colnames(cluster_average_exp_df_scaled)[i] %in% Non_inf_mac) anno_df[i] <<- 'nonInfMac'
-  if (colnames(cluster_average_exp_df_scaled)[i] %in% Inf_mac) anno_df[i] <<- 'InfMac'
-  if (colnames(cluster_average_exp_df_scaled)[i] %in% Mesenchymal) anno_df[i] <<- 'mesenchymal'
-  if (colnames(cluster_average_exp_df_scaled)[i] %in% Endothelial) anno_df[i] <<- 'endothelial'
+  if (colnames(cluster_average_exp_df_scaled)[i] %in% CV_Hep) anno_df[i] <<- 'Hep 1'
+  if (colnames(cluster_average_exp_df_scaled)[i] %in% other_Hep) anno_df[i] <<- 'Hep 2'
+  if (colnames(cluster_average_exp_df_scaled)[i] %in% Periportal_Hep) anno_df[i] <<- 'Hep 3'
+  if (colnames(cluster_average_exp_df_scaled)[i] %in% Cholagiocytes) anno_df[i] <<- 'Cholagiocyte'
+  if (colnames(cluster_average_exp_df_scaled)[i] %in% Non_inf_mac) anno_df[i] <<- 'Non-inf Mac'
+  if (colnames(cluster_average_exp_df_scaled)[i] %in% Inf_mac) anno_df[i] <<- 'Inf Mac'
+  if (colnames(cluster_average_exp_df_scaled)[i] %in% Mesenchymal) anno_df[i] <<- 'Mesenchymal'
+  if (colnames(cluster_average_exp_df_scaled)[i] %in% Endothelial) anno_df[i] <<- 'Endothelial'
 })
 
 
 anno_df_genes = c(rep(NA, nrow(cluster_average_exp_df_scaled)))
 sapply(1:ncol(merged_samples_subset) , function(i){
-  if (rownames(cluster_average_exp_df_scaled)[i] %in% CV_Hep_Markers) anno_df_genes[i] <<- 'cvHep'
-  if (rownames(cluster_average_exp_df_scaled)[i] %in% other_Hep_Markers) anno_df_genes[i] <<- 'Hep'
-  if (rownames(cluster_average_exp_df_scaled)[i] %in% Periportal_Hep_Markers) anno_df_genes[i] <<- 'ppHep'
-  if (rownames(cluster_average_exp_df_scaled)[i] %in% Cholagiocytes_Markers) anno_df_genes[i] <<- 'cholagiocyte'
-  if (rownames(cluster_average_exp_df_scaled)[i] %in% c(General_Macrophage_Markers, Non_inf_mac_Markers)) anno_df_genes[i] <<- 'nonInfMac'
-  if (rownames(cluster_average_exp_df_scaled)[i] %in% Inf_mac_Markers) anno_df_genes[i] <<- 'InfMac'
-  if (rownames(cluster_average_exp_df_scaled)[i] %in% Mesenchymal_Markers) anno_df_genes[i] <<- 'mesenchymal'
-  if (rownames(cluster_average_exp_df_scaled)[i] %in% Endothelial_Markers) anno_df_genes[i] <<- 'endothelial'
+  if (rownames(cluster_average_exp_df_scaled)[i] %in% CV_Hep_Markers) anno_df_genes[i] <<- 'Hep 1'
+  if (rownames(cluster_average_exp_df_scaled)[i] %in% other_Hep_Markers) anno_df_genes[i] <<- 'Hep 2'
+  if (rownames(cluster_average_exp_df_scaled)[i] %in% Periportal_Hep_Markers) anno_df_genes[i] <<- 'Hep 3'
+  if (rownames(cluster_average_exp_df_scaled)[i] %in% Cholagiocytes_Markers) anno_df_genes[i] <<- 'Cholagiocyte'
+  if (rownames(cluster_average_exp_df_scaled)[i] %in% c(General_Macrophage_Markers, Non_inf_mac_Markers)) anno_df_genes[i] <<- 'Non-inf Mac'
+  if (rownames(cluster_average_exp_df_scaled)[i] %in% Inf_mac_Markers) anno_df_genes[i] <<- 'Inf Mac'
+  if (rownames(cluster_average_exp_df_scaled)[i] %in% Mesenchymal_Markers) anno_df_genes[i] <<- 'Mesenchymal'
+  if (rownames(cluster_average_exp_df_scaled)[i] %in% Endothelial_Markers) anno_df_genes[i] <<- 'Endothelial'
 })
 length(anno_df_genes)
 
@@ -251,15 +250,59 @@ anno_df_genes = anno_df_genes[,-1,drop=F ]
 dim(cluster_average_exp_df_scaled)
 
 #mat_breaks <- seq(min(cluster_average_exp_df_scaled), max(cluster_average_exp_df_scaled), length.out = 10)
+annot_info <- read.csv('figure_panel/Annotations_SingleNuc_Rat_June_8_2023.csv')
+annot_info <- annot_info[1:34, 1:4]
+colnames(annot_info)[1] = 'clusters'
 
+
+show_col(color_df$colors)
+c(CV_Hep_Markers, other_Hep_Markers, Periportal_Hep_Markers, Cholagiocytes_Markers, 
+  General_Macrophage_Markers, Non_inf_mac_Markers, Inf_mac_Markers, 
+  Mesenchymal_Markers, Endothelial_Markers) 
+
+
+fc <- colorRampPalette(c("green", "darkgreen"))
+annot_info.df = data.frame(table(annot_info$label))
+
+fc <- colorRampPalette(c('palevioletred1'))
+cvHep_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 1']) #cvHep
+
+fc <- colorRampPalette(c('orchid3'))
+Hep_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 2'])
+
+fc <- colorRampPalette(c('maroon1'))
+ppHep_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 3']) #ppHep
+
+fc <- colorRampPalette(c('mistyrose'))
+unknown_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Unknown/High Mito'])
+
+fc <- colorRampPalette(c('cyan')) #coral
+chol_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Cholangiocytes'])
+
+infMac_c = '#117733'
+nonInfMac_c = '#999933' #'#47A265'
+LSEC_c = c('#FFE729', '#FFE729')
+Stellate_c = '#6699CC'
+
+anno_df_col = anno_df
+anno_df_col$colors=c(cvHep_c, Hep_c, ppHep_c, chol_c, nonInfMac_c, infMac_c, Stellate_c, LSEC_c)
+
+##### makeing the input list for the pheatmap annotation colors
+show_col(unique(anno_df_col$colors))
+anno_df_col_list = unique(anno_df_col$colors)
+names(anno_df_col_list) = unique(anno_df_col$CellType)
+
+colnames(anno_df) = 'CellType'
+colnames(anno_df_genes) = 'CellType'
 pheatmap(t(cluster_average_exp_df_scaled), cluster_rows = FALSE,
          cluster_cols = FALSE, 
          annotation_row = data.frame(anno_df),
          annotation_col = data.frame(anno_df_genes),
-         color= inferno(10),  
-         border_color= NA, 
+         color= inferno(20, direction = +1),  
+         border_color= FALSE, 
          annotation_names_row=FALSE,
          annotation_names_col=FALSE,
-         annotation_legend = TRUE,
+         annotation_colors = list(CellType=anno_df_col_list),
+         annotation_legend = TRUE
          )
-
+?pheatmap

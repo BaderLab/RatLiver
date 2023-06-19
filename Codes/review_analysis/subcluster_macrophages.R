@@ -27,15 +27,21 @@ get_scaled_by_gene <- function(x){
 
 
 merged_samples <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
+
+Resolution = 2.5
+merged_samples <- FindClusters(merged_samples, resolution = Resolution, verbose = FALSE)
+table(merged_samples$SCT_snn_res.2.5)
+merged_samples$cluster = merged_samples$SCT_snn_res.2.5
+
 table(merged_samples$cluster, merged_samples$annot_IM) ## cluster 8 seems to be the macrophage population
-mac_cluster_num = 8
+mac_cluster_num = c(19, 33)
 ##################################################################
 ######## Subclustering the macrophage cluster
 
 ## refined macrophage ids based on subclustering results
-macrophage_ids <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_macrophage_IDs.rds') 
+#macrophage_ids <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_macrophage_IDs.rds') 
 
-mac_data = merged_samples[, merged_samples$cluster==mac_cluster_num]
+mac_data = merged_samples[, merged_samples$cluster %in% mac_cluster_num]
 #mac_data = merged_samples[, colnames(merged_samples) %in% macrophage_ids]
 
 
@@ -50,7 +56,7 @@ plot(100 * mac_data@reductions$pca@stdev^2 / mac_data@reductions$pca@misc$total.
      pch=20,xlab="Principal Component",ylab="% variance explained",log="y")
 mac_data <- RunHarmony(mac_data, group.by.vars = "sample_name", assay.use="RNA")
 
-res = 1.0
+res = 0.8
 mac_data <- RunUMAP(mac_data, reduction = "harmony", dims = 1:30, verbose = FALSE) %>%
   FindNeighbors(reduction = "harmony", dims = 1:30, verbose = FALSE) %>%
   FindClusters(resolution = res, verbose = FALSE)
@@ -63,7 +69,7 @@ markers2 = c('Lyz2', 'Clec10a', 'Clec9a') ##'Xcr1' was not captured
 markers = c(markers1, markers2)
 i = 7
 gene_name = markers[i] 
-gene_name = 'Lyz2'
+gene_name = 'Clec4f'
 df_umap <- data.frame(UMAP_1=getEmb(mac_data, 'umap')[,1], 
                       UMAP_2=getEmb(mac_data, 'umap')[,2], 
                       library_size= mac_data$nCount_RNA, 
@@ -78,13 +84,25 @@ df_umap <- data.frame(UMAP_1=getEmb(mac_data, 'umap')[,1],
                       strain = mac_data$strain, 
                       umi=colnames(mac_data))
 
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=a_gene))+geom_point(size=1.5, alpha=0.6)+theme_classic()+
-  scale_color_viridis(direction = -1)+ggtitle(gene_name)
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=a_gene))+
+  scale_color_viridis(direction = -1)+ggtitle(gene_name)+
+  geom_point(alpha=0.8,size=1.6)+
+  scale_color_viridis('Expresion\nValue', direction = -1)+theme_classic()+
+  theme(text = element_text(size=16.5),
+        plot.title = element_text(hjust = 0.5),
+        legend.title=element_text(size = 10))+
+  ggtitle(paste0(gene_name)) 
+
+
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1.7,alpha=0.8)+
+  theme_classic()+scale_color_manual('Cluster', values = c(colorPalatte))+
+  theme(text = element_text(size=16.5),
+        plot.title = element_text(hjust = 0.5),
+        legend.title=element_text(size = 10))+
+  ggtitle(paste0(''))#colorPalatte
 
 
 
-ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1.7,alpha=0.6)+
-  theme_classic()+scale_color_manual(values = c(colorPalatte))+ggtitle(paste0('resolution: ', res))#colorPalatte
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=sample_name))+geom_point(size=1.3,alpha=0.7)+theme_classic()
 
 ########################################################################################
@@ -125,7 +143,8 @@ save(mac_data, sCVdata_list,
 
 
 
-
+?
+  
 ######################################################################
 #################### sample contribution in each cluster
 

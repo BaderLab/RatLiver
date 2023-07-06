@@ -36,6 +36,11 @@ table(merged_samples_sub$SCT_snn_res.2.5)
 merged_samples_all$SCT_snn_res.2.5 = merged_samples_sub$SCT_snn_res.2.5
 merged_samples = merged_samples_all
 
+
+####################################################
+
+
+
 CV_Hep = c(23, 8, 3, 13, 32, 26, 12, 17, 1, 15) 
 CV_Hep_Markers = c('Akr1c1', 'Ahr', 'Glul', 
                    'Notum', 'Rcan1', 'Cyp2f4', 'Cyp27a1', 'Cyp7a1', 'Cyp2e1', 'Cyp8b1')

@@ -133,7 +133,7 @@ merged_samples$cluster = as.character(merged_samples$SCT_snn_res.2.5)
 
 annot_info <- read.csv('figure_panel/Annotations_SingleNuc_Rat_June_8_2023.csv')
 colnames(annot_info)[1] = 'clusters'
-annot_info(annot_info$label)
+annot_info$label
 
 table(merged_samples$cluster, merged_samples$annot_IM) ## cluster 8 seems to be the macrophage population
 #mes_cluster_num = c(5, 7) # 0.6 res
@@ -194,7 +194,7 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=a_gene))+geom_point(size=1.5, alph
 
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1.5, alpha=0.6)+theme_classic()
 
-saveRDS(mes_data, '~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data_res2.5_cluster24Only.rds')
+mes_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data_res2.5_cluster24Only.rds')
 ###################################################################
 
 

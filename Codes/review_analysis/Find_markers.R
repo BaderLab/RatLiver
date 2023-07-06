@@ -9,6 +9,12 @@ library(Polychrome)
 
 #merged_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC.rds')
 merged_samples = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
+
+mes_data <- readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_mesenchymal_subclusters_merged_data_res2.5_cluster24Only.rds')
+merged_samples <- mes_data
+Idents(merged_samples) <- paste0('cluster_', as.character(merged_samples$SCT_snn_res.1))
+cluster_names <-  levels(merged_samples)
+
 #merged_samples <- FindNeighbors(merged_samples,reduction="harmony",verbose=T)
 Resolution = 2.5
 merged_samples <- FindClusters(merged_samples, resolution = Resolution, verbose = FALSE)
@@ -84,10 +90,16 @@ names(Cluster_markers_final) <- names(Cluster_markers)
 #Cluster_markers <- readRDS('Results/old_samples/Cluster_markers_mergedOldSamples.rds')
 #saveRDS(Cluster_markers_final, 'Results/new_samples/Cluster_markers_final.rds')
 #saveRDS(Cluster_markers_final, paste0('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_cluster_markers_res',Resolution,'.rds'))
-Cluster_markers_final <- readRDS(paste0('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_cluster_markers_res',Resolution,'.rds'))
+Cluster_markers_final <- readRDS(paste0('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_cluster_markers_res', Resolution,'.rds'))
+
+
+################################################################################
+Resolution = 1.0
+saveRDS(Cluster_markers_final, paste0('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_mesenchymal_markers_res',Resolution,'cluster24Only.rds'))
+
 lapply(Cluster_markers_final, head)
 #### saving markers #####
-marker_dir = paste0('~/rat_sham_sn_data/standardQC_results/cluster_markers_res',Resolution,'/')
+marker_dir = paste0('~/rat_sham_sn_data/standardQC_results/mesenchymal_markers_res',Resolution,'/')
 dir.create(marker_dir)
 
 for(i in 1:length(Cluster_markers_final)){

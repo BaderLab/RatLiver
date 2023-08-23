@@ -11,14 +11,19 @@ library(reshape2)
 merged_samples = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
 # merged_samples_all = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC_allfeatures.rds')
 
+
 Resolution = 2.5
 merged_samples <- FindClusters(merged_samples, resolution = Resolution, verbose = FALSE)
 table(merged_samples$SCT_snn_res.2.5)
 merged_samples$clusters = merged_samples$SCT_snn_res.2.5
 
+sample_types = names(table(merged_samples$sample_name))
+median_exp_gene = sapply(1:length(sample_types), function(i) 
+ median(merged_samples$nFeature_RNA[merged_samples$sample_name==sample_types[i]]), simplify = F)
+names(sample_types) = sample_types
 
 cluster_num = '4'
-gene_name = 'Cd5l'  #Sirpa
+gene_name = 'Cps1'  #Sirpa
 rownames(merged_samples)[grep(gene_name, rownames(merged_samples))] ## check if the gene is present in the dataset
 
 df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap_h')[,1], 
@@ -41,7 +46,13 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=expression_val))+
 ##### adding the final annotations to the dataframe
 annot_info <- read.csv('figure_panel/Annotations_SingleNuc_Rat_May_31_2023.csv')
 annot_info <- read.csv('figure_panel/Annotations_SingleNuc_Rat_June_8_2023.csv')
+annot_info <- read.csv('figure_panel/Annotations_SingleNuc_Rat_July26.csv')
+
+head(annot_info)
+1:33 %in% annot_info$Cluster
+#annot_info <- annot_info[1:35, 1:4]
 annot_info <- annot_info[1:34, 1:4]
+
 colnames(annot_info)[1] = 'clusters'
 
 ################################################################
@@ -52,8 +63,12 @@ clusters_not_included = names(table(merged_samples$SCT_snn_res.2.5))[!names(tabl
                                                as.character(annot_info$clusters)]
   
 clusters_not_included.df = data.frame(clusters=clusters_not_included,
-                                      Annotation='Unknown',
-                                      label='unknown',Markers=NA)
+                                      Annotation='Unknown/High Mito',
+                                      label='Unknown/High Mito',Marker.Genes=NA)
+
+
+colnames(annot_info)
+colnames(clusters_not_included.df)
 annot_info=rbind(annot_info, clusters_not_included.df)
 #annot_info <- annot_info[1:18,] # 14
 annot_info$clusters = as.character(annot_info$clusters)
@@ -67,18 +82,23 @@ annot_info$clusters = as.character(annot_info$clusters)
 fc <- colorRampPalette(c("green", "darkgreen"))
 annot_info.df = data.frame(table(annot_info$label))
 
+
+fc <- colorRampPalette(c('maroon1'))
+ppHep_1 = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 0']) #ppHep
+
+fc <- colorRampPalette(c('magenta3')) #'magenta1'
+ppHep_2 = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 1']) #ppHep
+ppHep_2
+
 fc <- colorRampPalette(c('pink1', 'palevioletred1'))
 fc <- colorRampPalette(c('palevioletred1'))
-cvHep_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 1']) #cvHep
+cvHep_1 = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 2']) #cvHep
 
 fc <- colorRampPalette(c('orchid1', 'orchid4'))
 fc <- colorRampPalette(c('orchid3'))
-Hep_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 2'])
+cvHep_2 = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 3'])
 
 #fc <- colorRampPalette(c('palevioletred1', 'palevioletred1'))
-fc <- colorRampPalette(c('magenta1', 'magenta3'))
-fc <- colorRampPalette(c('maroon1'))
-ppHep_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 3']) #ppHep
 
 fc <- colorRampPalette(c('grey70', 'grey20'))
 fc <- colorRampPalette(c('mistyrose'))
@@ -92,14 +112,17 @@ nonInfMac_c = '#999933' #'#47A265'
 LSEC_c = c('#FFE729','#FFAF13')
 Stellate_c = '#6699CC'
 
-color_df = data.frame(colors=c(cvHep_c, Hep_c, ppHep_c, chol_c, nonInfMac_c, infMac_c, Stellate_c, LSEC_c , unknown_c),
-                      labels=c( rep('Hep 1',length(cvHep_c)), rep('Hep 2',length(Hep_c)), rep('Hep 3',length(ppHep_c)), 
+color_df = data.frame(colors=c(cvHep_2, cvHep_1, ppHep_1, ppHep_2,  chol_c, nonInfMac_c, infMac_c, Stellate_c, LSEC_c , unknown_c),
+                      labels=c(rep('Hep 3',length(cvHep_2)),rep('Hep 2',length(cvHep_1)),  rep('Hep 0',length(ppHep_1)), rep('Hep 1',length(ppHep_2)), 
                      rep('Cholangiocytes',length(chol_c)), 'Non-inf Macs', 'Inf Macs', 'Mesenchymal', 
                      rep('Endothelial',length(LSEC_c)), rep('Unknown/High Mito',length(unknown_c))))
 
 
 
+nrow(annot_info)
+nrow(color_df)
 color_df$labels == annot_info$label
+annot_info[color_df$labels != annot_info$label,]
 show_col(color_df$colors)
 annot_info2 = cbind(annot_info, color_df)
 
@@ -172,6 +195,8 @@ counts$cluster = gsub(x =counts$cluster , 'inflammatory', 'inf')
 
 
 counts$cluster= factor(counts$cluster, levels = as.character(Colors) ) 
+counts$cluster= factor(counts$cluster, levels = Colors ) 
+
 
 counts$strain=sapply(strsplit(counts$sample_type,'-') ,'[[', 1)
 #write.csv(counts, 'figure_panel/set1-counts.csv')
@@ -193,11 +218,16 @@ counts_split <- split( counts , f = counts$cluster )
 counts_split_norm <- lapply(counts_split, function(x) {x$Freq=x$Freq/sum(x$Freq);x})
 counts_norm <- do.call(rbind,counts_split_norm )
 
+counts_norm$sample_type=ifelse(counts_norm$sample_type=='DA_SHAM003_CST', 'DA-1', counts_norm$sample_type)
+counts_norm$sample_type=ifelse(counts_norm$sample_type=='DA_SHAM004_CST', 'DA-2', counts_norm$sample_type)
+counts_norm$sample_type=ifelse(counts_norm$sample_type=='LEW_SHAM1_CST', 'LEW-1', counts_norm$sample_type)
+counts_norm$sample_type=ifelse(counts_norm$sample_type=='LEW_SHAM2_CST', 'LEW-2', counts_norm$sample_type)
+
 ggplot(data=counts_norm, aes(x=cluster, y=Freq, fill=sample_type)) +
   geom_bar(stat="identity",color='black',alpha=0.9)+theme_classic()+
   ylab('Fraction of sample per cell type (%)')+
   #scale_fill_manual(values = c("#E69F00", "#009E73"))+
-  #scale_fill_brewer(palette = "Set3")+
+  scale_fill_brewer(palette = "Set3")+
   #scale_fill_manual(values=mycolors)+
   #scale_x_discrete(labels = immune_sub_labels) #scales::wrap_format(9)
   #scale_fill_manual(values = c("pink1", "skyblue1"))+

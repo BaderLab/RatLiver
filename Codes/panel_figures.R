@@ -123,7 +123,7 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=a_cluster))+
                       
 df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap')[,1], 
                       UMAP_2=getEmb(merged_samples, 'umap')[,2], 
-                      label=merged_samples$EndoSub,
+                      #label=merged_samples$EndoSub,
                       Ptprc=GetAssayData(merged_samples)['Ptprc',],
                       Lyve1=GetAssayData(merged_samples)['Lyve1',],
                       Eng=GetAssayData(merged_samples)['Eng',])
@@ -155,6 +155,7 @@ df_umap <- df_umap[match(colnames(merged_samples),df_umap$umi),]
 df_umap$umi == colnames(merged_samples)
 sum(df_umap$umi != colnames(merged_samples))
 
+table(df_umap$label)
 colorBlindGrey8   <- c("#999999", "#E69F00", "#56B4E9", "#009E73", 
                        "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
@@ -425,7 +426,7 @@ set_2_cl_ord = set_1_cl_ord
 ############## Dot plots ###############
 ############### Set-1 ########
 merged_samples2 = merged_samples
-
+dim(merged_samples2)
 set1_info_ord = set1_info[match(set_2_cl_ord, set1_info$label),]
 matrix = as.matrix(set1_info_ord[,4:8])
 markers = c()
@@ -437,10 +438,27 @@ markers_final = unique(c(markers[1:div_num],'Ptprc', 'Cd68', markers[(div_num+1)
 markers_final = unique(c('Ptprc', 'Cd68',markers))
 markers_final = unique(c('Ptprc', markers[1:div_num], 'Cd68', markers[(div_num+1):length(markers)]))
 
+
+
+markers_final=c("Cps1","Scd","Cyp2a1","Itih3","Fgb","Calr","C3","Itih4","Arg1","G6pc","Slco1b2","Igfbp1",
+  "Insig1","Hamp","Fabp1","Dbi","Apoa2","Cox8a","Alb","Apoc1","Fth1","Apoc3",  
+"Cox7b","Rpl10",'Ifi27',"Ctsl","Lyve1","Fcgr2b","Sparc",
+'Rspo3', 'Clec4g', 'Bmp2',
+"Stab2","Fam167b","Eng",'Ramp2',"Calcrl","Ecm1","Col3a1","Igfbp7",
+"Ptprc","Cd68","Clec4f",
+"Marco","Vsig4","Cd5l","Hmox1","Cd163","Cd74","Lyz2",   
+"RT1-Db1", "RT1-Da","Il18","Klrd1","Gzmk","Cd7","Ccl5","Gzma")
+
+
+
 Idents(merged_samples2) <- factor(df_umap$label, levels = set_2_cl_ord)
 DotPlot(merged_samples2, features = markers_final) + RotatedAxis()+ xlab('Markers')+
   ylab('')+theme(axis.text.x = element_text(size=12))
 #split.by = "groups"
+DotPlot(merged_samples2, features = markers_final) + RotatedAxis()+ xlab('Markers')+
+  ylab('')+theme(axis.text.x = element_text(size=12))
+#split.by = "groups"
+names(table(df_umap$label))
 
 
 ############## Varimax-related plots ##############

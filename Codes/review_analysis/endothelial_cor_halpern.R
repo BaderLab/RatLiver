@@ -35,6 +35,7 @@ merged_samples = endo_data
 merged_samples$cluster = as.character(merged_samples$SCT_snn_res.0.8)
 
 
+
 Resolution = 2.5
 resolutions = Resolution
 merged_samples <- FindClusters(merged_samples, resolution = Resolution, verbose = FALSE)
@@ -181,6 +182,13 @@ pheatmap(t(df_cor_sub), fontsize =10,fontsize_row=12,fontsize_col=12, main=main,
 dev.off()
 
 
+
+
+sham_sn_merged_scCLustViz_object = '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_endothelial_subclusters_sCVdata_res2.5.RData' ### find the results on run1
+load(sham_sn_merged_scCLustViz_object)
+merged_samples = endo_data
+merged_samples$cluster = as.character(merged_samples$SCT_snn_res.0.8)
+endo_data = merged_samples
 markers = c('Lyve1')
 i = 1
 gene_name = markers[i] 
@@ -203,4 +211,18 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=a_gene))+geom_point(size=1.5, alph
   scale_color_viridis(direction = -1)+ggtitle(gene_name)
 
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(size=1.5, alpha=0.6)+theme_classic()
+
+ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=cluster))+geom_point(alpha=0.6, size=2)+
+  theme_classic()+#scale_color_manual(values = c('black', 'grey'))+
+  theme(text = element_text(size=15),legend.title = element_blank())+
+  ggtitle('snRNA-seq endothelial subclustering\n(res=0.8)')
+
+
+##########################################
+####### generating dot plot for endithelial subclustering supp figure
+###################################
+markers_list= unique(c("Lyve1", "Ramp2", "Fcgr2b", "Bmp2", "Eng", "Fam167b", "Sparc", "Stab2", "Kdr", "Id3", "Igfbp7", "Eng", "Sparc", "Ifi27", "Vwf", "Ltbp4"))
+Idents(endo_data) <- factor(endo_data$SCT_snn_res.0.8, levels = as.character(c(0:3)))
+DotPlot(endo_data, features = markers_list) + RotatedAxis()+ xlab('Markers')+
+  ylab('')+theme(axis.text.x = element_text(size=12))
 

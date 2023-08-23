@@ -35,7 +35,7 @@ LIB_SIZE_CUT_OFF = 1000
 MIT_CUT_OFF = 10
 NUM_GENES_DETECTED = 100
 
-i = 3
+i = 4
 sample_name = sample_names[i]
 sample_name
 
@@ -87,11 +87,12 @@ print(paste0('Percentage of remained after both filters: ',
 
 
 
-############ importing dropletQC results
+
 df = data.frame(library_size= data_raw$nCount_RNA, 
                 mito_perc=data_raw$mito_perc , 
                 n_expressed=data_raw$nFeature_RNA)
 
+############ importing dropletQC results
 empty_drops.dc <- readRDS(paste0('~/rat_sham_sn_data/DropletQC_results/cellstatus_DF/',sample_name , '_empty_drop_DF.rds'))
 sum(rownames(empty_drops.dc$df) != rownames(df))
 
@@ -246,6 +247,13 @@ names(files_rds) = sample_names
 head(files_rds[[1]])
 lapply(files_rds, dim)
 
+med_genes_cell = sapply(1:length(files_rds), 
+       function(i) {
+         median(files_rds[[i]]$nFeature_SCT) 
+       },simplify = F)
+names(med_genes_cell) = sample_names
+med_genes_cell
+
 merged_data <- merge(files_rds[[1]], c(files_rds[[2]], files_rds[[3]], files_rds[[4]] ), # 
                      add.cell.ids = names(files_rds), 
                      project = names(files_rds), 
@@ -331,9 +339,11 @@ ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=gene))+geom_point(alpha=0.4)+theme
   scale_color_viridis(direction = -1)+ggtitle(gene_name)
 
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=library_size))+geom_point(alpha=0.4)+theme_classic()+
-  scale_color_viridis(direction = -1)
+  scale_color_viridis(direction = -1)+xlab('UMAP_1')+ylab('UMAP_2')#
+ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=n_expressed))+geom_point(alpha=0.4)+theme_classic()+
+  scale_color_viridis(direction = -1)+xlab('UMAP_1')+ylab('UMAP_2')#
 ggplot(df_umap, aes(x=UMAP_h_1, y=UMAP_h_2, color=mito_perc))+geom_point(alpha=0.4)+theme_classic()+
-  scale_color_viridis(direction = -1)+ggtitle(sample_name)
+  scale_color_viridis(direction = -1)+xlab('UMAP_1')+ylab('UMAP_2')#
 
 ggplot(df_umap, aes(x=UMAP_1, y=UMAP_2, color=nuclear_fraction))+geom_point(alpha=0.4)+theme_classic()+
   scale_color_viridis(direction = -1)

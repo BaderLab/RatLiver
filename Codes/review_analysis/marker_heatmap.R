@@ -297,8 +297,11 @@ show_col(unique(anno_df_col$colors))
 anno_df_col_list = unique(anno_df_col$colors)
 names(anno_df_col_list) = unique(anno_df_col$CellType)
 
+anno_df_col_list
 colnames(anno_df) = 'CellType'
 colnames(anno_df_genes) = 'CellType'
+
+
 pheatmap(t(cluster_average_exp_df_scaled), cluster_rows = FALSE,
          cluster_cols = FALSE, 
          annotation_row = data.frame(anno_df),
@@ -310,4 +313,31 @@ pheatmap(t(cluster_average_exp_df_scaled), cluster_rows = FALSE,
          annotation_colors = list(CellType=anno_df_col_list),
          annotation_legend = TRUE
          )
+
+
+
+all_hep_markers = c(CV_Hep_Markers, other_Hep_Markers, Periportal_Hep_Markers)
+all_hep_clusters = c(CV_Hep, other_Hep, Periportal_Hep)
+
+cluster_average_exp_df_scaled_sub = cluster_average_exp_df_scaled[,!colnames(cluster_average_exp_df_scaled) %in% all_hep_clusters]
+cluster_average_exp_df_scaled_sub = cluster_average_exp_df_scaled_sub[!rownames(cluster_average_exp_df_scaled_sub) %in% all_hep_markers,]
+
+
+anno_df_sub = data.frame(CellType=anno_df[!anno_df$CellType %in% c('Hep 1', 'Hep 2', 'Hep 3'),])
+rownames(anno_df_sub) = rownames(anno_df)[!anno_df$CellType %in% c('Hep 1', 'Hep 2', 'Hep 3')]
+
+anno_df_genes_sub = data.frame(CellType=anno_df_genes[!anno_df_genes$CellType %in% c('Hep 1', 'Hep 2', 'Hep 3'),])
+rownames(anno_df_genes_sub) = rownames(anno_df_genes)[!anno_df_genes$CellType %in% c('Hep 1', 'Hep 2', 'Hep 3')]
+
+pheatmap(t(cluster_average_exp_df_scaled_sub), cluster_rows = FALSE,
+         cluster_cols = FALSE, 
+         annotation_row = data.frame(anno_df_sub),
+         annotation_col = data.frame(anno_df_genes_sub),
+         color= inferno(20, direction = +1),  
+         border_color= FALSE, 
+         annotation_names_row=FALSE,
+         annotation_names_col=FALSE,
+         annotation_colors = list(CellType=anno_df_col_list[4:length(anno_df_col_list)]),
+         annotation_legend = TRUE
+)
 ?pheatmap

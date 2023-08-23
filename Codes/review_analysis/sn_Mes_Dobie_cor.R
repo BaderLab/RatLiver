@@ -71,6 +71,7 @@ mes_data$cluster <- as.character(mes_data$SCT_snn_res.1)
 cluster_names = mes_data$cluster 
 cluster_names_types = names(table(cluster_names))
 
+merged_samples = mes_data
 ### dividing the expression matrix based on the clusters
 cluster_expression <- sapply(1:length(cluster_names_types), function(i){
   a_cluster_name = cluster_names_types[i]
@@ -105,15 +106,25 @@ rat_cluster_average.df = mes_cluster_average_exp
 head(rat_cluster_average.df)
 head(mouse_data)
 
+rat_HVGs = VariableFeatures(mes_data)
 ############################################################
 merge_mouse_rat = merge(mouse_data, rat_cluster_average.df, by.x='rat_genes', by.y='rat_ID')
 head(merge_mouse_rat)
 dim(merge_mouse_rat)
 merge_mouse_rat_c = merge_mouse_rat[merge_mouse_rat$rat_genes %in% rat_HVGs,]
+dim(merge_mouse_rat_c)
+merge_mouse_rat_c = merge_mouse_rat_c[merge_mouse_rat_c$mouse_ID %in%  VariableFeatures(Dobie_data),]
+dim(merge_mouse_rat_c)
 
-merge_mouse_rat_c = merge_mouse_rat[-c(1, 2)] #10
+head(merge_mouse_rat_c)
+merge_mouse_rat_c = merge_mouse_rat_c[,-c(1, 2)] #10
+dim(merge_mouse_rat_c)
+head(merge_mouse_rat_c)
 num_mouse_clusters = ncol(mouse_data) - 2
-pheatmap::pheatmap(cor(merge_mouse_rat_c)[1:num_mouse_clusters, (num_mouse_clusters+1):ncol(merge_mouse_rat_c)]) #main=paste0('#genes: ', nrow(merge_mouse_rat_c))
+cor_mat = cor(merge_mouse_rat_c)[1:num_mouse_clusters, (num_mouse_clusters+1):ncol(merge_mouse_rat_c)]
+colnames(cor_mat) = c('snMes.0', 'snMes.1', 'snMes.2')
+rownames(cor_mat)
+pheatmap::pheatmap(cor_mat, fontsize = 15) #main=paste0('#genes: ', nrow(merge_mouse_rat_c))
 
 
 

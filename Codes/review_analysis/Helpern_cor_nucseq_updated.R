@@ -40,6 +40,13 @@ Hep2 = as.character(c(2, 5, 9, 21)) #
 Hep3 = as.character(c(3, 8,13, 23, 32 ))
 
 
+##########  updated version (V3) - July 19th - FINAL PUBLICATION FIGURE
+Hep3 = c("3", "8", "13", "23", "32")
+Hep2 = c("21", "9", "2", "5")
+Hep0 = c("25", "27", "4", "16", "7", "0", "10")
+Hep1 = c("1", "6", "15", "17", "12", "31", "26")
+
+
 merged_samples$clusters = as.character(merged_samples$SCT_snn_res.2.5)
 merged_samples$Hep_clusters = ifelse(merged_samples$clusters %in% as.character(Hep0), 'Hep0', merged_samples$clusters) 
 merged_samples$Hep_clusters = ifelse(merged_samples$Hep_clusters %in% as.character(Hep1), 'Hep1', merged_samples$Hep_clusters) 
@@ -53,7 +60,7 @@ merged_samples = merged_samples[, merged_samples$Hep_clusters %in% c('Hep0', 'He
 ##### annotate the hepatocytes based on the mouse zonation layers
 
 merged_samples$cluster <- as.character(merged_samples$Hep_clusters)
-merged_samples$cluster <- as.character(merged_samples$SCT_snn_res.2.5)
+#merged_samples$cluster <- as.character(merged_samples$SCT_snn_res.2.5)
 cluster_names = merged_samples$cluster 
 cluster_names_types = names(table(cluster_names))
 
@@ -100,7 +107,7 @@ rat_to_mouse_genes <- readRDS('~/XSpecies/rat_to_mouse_genes.rds')
 
 ########## Importing and cleaning the Halpern dataset ##########
 p_value_th = 1e-60 #1e-20#
-q_value_th = 1e-20 # 1e-25 worked well 
+q_value_th = 1e-25 # 1e-25 worked well 
 q_value_th = 0.05
 q_value_th = 0.01
 
@@ -196,7 +203,10 @@ fdr_mat_char.t = fdr_mat_char.t[,c('Hep1','Hep0','Hep2','Hep3')]
 pheatmap::pheatmap(halpern_cor_mat.sub.t, cluster_rows = F, cluster_cols  = F, 
                    display_numbers = fdr_mat_char.t ,
                    #color = plasma(100),
-                   fontsize_row = 15,fontsize_col = 15,fontsize_number = 22,main='',
+                   fontsize_row = 15,fontsize_col = 15,
+                   fontsize_number = 22,
+                   fontsize = 12,
+                   main='',
                    color=colorRampPalette(c("blue3", "white", "violetred2"))(50)) #inferno(20)
 
 

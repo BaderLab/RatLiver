@@ -69,7 +69,9 @@ head(human_data)
 
 ####################
 Dobie_data = readRDS('Objects/mesenchymal/Dobie/Dobie_annotated.RDS')
-Dobie_data = Dobie_data[rownames(Dobie_data) %in% VariableFeatures(Dobie_data),] 
+mouse_var = VariableFeatures(Dobie_data)
+Dobie_data = Dobie_data[rownames(Dobie_data) %in% mouse_var,] 
+
 cluster_names_types = names(table(Dobie_data$Manualanno_Sample))
 cluster_names = Dobie_data$Manualanno_Sample
 
@@ -124,7 +126,7 @@ colnames_set2 = c("pDC (17)", "Naive T cell (10)", "Erythroid (5)", "Hep (0)" , 
 colnames(rat_cluster_average.df) = colnames_set2
 
 mes_sub_seur = readRDS('Results/old_samples/Mesenchymal_subclusters.rds')
-mes_sub_seur <- FindVariableFeatures(mes_sub_seur)
+mes_sub_seur <- FindVariableFeatures(mes_sub_seur, nfeatures = 1000)
 rat_mes_HVGs <- VariableFeatures(mes_sub_seur)
 mes_sub_seur = mes_sub_seur[rownames(mes_sub_seur) %in% rat_mes_HVGs,] 
 
@@ -161,11 +163,15 @@ cluster_average_exp_df = do.call(cbind,cluster_average_exp)
 colnames(cluster_average_exp_df) = names(cluster_average_exp)
 head(cluster_average_exp_df)
 
+
+cluster_average_exp_df <- cluster_average_exp_df[,!colnames(cluster_average_exp_df) %in% c("rat_mes_2","rat_mes_3")]
 ## scale and center all the genes in the matrix
 cluster_average_exp_df <- get_scaled_by_gene(cluster_average_exp_df) ## scaling over the clusters of interest
 head(cluster_average_exp_df)
 cluster_average_exp_df$rat_ID = rownames(cluster_average_exp_df)
-rat_cluster_average.df = cluster_average_exp_dfs
+rat_cluster_average.df = cluster_average_exp_df
+head(rat_cluster_average.df)
+colnames(rat_cluster_average.df)[1:4] = paste0('Mes_',c(0,1,4,5))
 head(rat_cluster_average.df)
 
 ############################################################
@@ -182,6 +188,8 @@ head(merge_mouse_rat)
 dim(merge_mouse_rat)
 
 merge_mouse_rat = merge_mouse_rat[-c(1, 2)] #10
-pheatmap::pheatmap(cor(merge_mouse_rat)[1:3, 4:ncol(merge_mouse_rat)])
+cor_mat = cor(merge_mouse_rat)[1:3, 4:ncol(merge_mouse_rat)]
+colnames(cor_mat) = paste0('scMes.', c(0,1,4,5))
+pheatmap::pheatmap(t(cor_mat), fontsize = 12)
 
 

@@ -17,8 +17,9 @@ check_qc_cor <- function(merged_samples, pca_embedding_df, main){
 }
 
 merged_samples2 = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
+#merged_samples = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_annot_standardQC.rds')
 
-
+merged_samples2$SCT_snn_res.2.5
 
 ####################################################################
 #### generating the merged data needed for varimax analysis:
@@ -147,11 +148,102 @@ sum(rownames(merged_samples2@meta.data) != rownames(embedd_df_rotated_2))
 embedd_df_rotated_2 = cbind(embedd_df_rotated_2, merged_samples2@meta.data) ### run for the complete data
 embedd_df_rotated_2 = cbind(embedd_df_rotated_2, merged_samples@meta.data) ### run for the non-hep data
 
+
+embedd_df_rotated_2
+
 ### saving the varimax results with the added metadata 
 #saveRDS(list(scores=embedd_df_rotated_2, rotatedLoadings=rotatedLoadings), 
 #        '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC_varimax_res.rds')
 
 
+#############
+#### Adding updated annotation metadata to the varimax results 
+merged_samples$SCT_snn_res.2.5 = as.character(merged_samples2$SCT_snn_res.2.5)
+sum(rownames(embedd_df_rotated_2) != colnames(merged_samples2))
+embedd_df_rotated_2$clusters = merged_samples$SCT_snn_res.2.5
+
+##### adding the final annotations to the dataframe
+annot_info <- read.csv('figure_panel/Annotations_SingleNuc_Rat_June_8_2023.csv')
+annot_info <- annot_info[1:35, 1:4]
+colnames(annot_info)[1] = 'clusters'
+
+################################################################
+########  adding color information to the data frame ##########
+###############################################################
+
+fc <- colorRampPalette(c("green", "darkgreen"))
+annot_info.df = data.frame(table(annot_info$label))
+
+fc <- colorRampPalette(c('pink1', 'palevioletred1'))
+fc <- colorRampPalette(c('palevioletred1'))
+cvHep_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 1']) #cvHep
+
+fc <- colorRampPalette(c('orchid1', 'orchid4'))
+fc <- colorRampPalette(c('orchid3'))
+Hep_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 2'])
+
+#fc <- colorRampPalette(c('palevioletred1', 'palevioletred1'))
+fc <- colorRampPalette(c('magenta1', 'magenta3'))
+fc <- colorRampPalette(c('maroon1'))
+ppHep_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Hep 3']) #ppHep
+
+fc <- colorRampPalette(c('grey70', 'grey20'))
+fc <- colorRampPalette(c('mistyrose'))
+unknown_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Unknown/High Mito'])
+
+fc <- colorRampPalette(c('cyan')) #coral
+chol_c = fc(annot_info.df$Freq[annot_info.df$Var1=='Cholangiocytes'])
+
+infMac_c = '#117733'
+nonInfMac_c = '#999933' #'#47A265'
+LSEC_c = c('#FFE729','#FFAF13')
+Stellate_c = '#6699CC'
+
+color_df = data.frame(colors=c(cvHep_c, Hep_c, ppHep_c, chol_c, nonInfMac_c, infMac_c, Stellate_c, LSEC_c , unknown_c),
+                      labels=c( rep('Hep 1',length(cvHep_c)), rep('Hep 2',length(Hep_c)), rep('Hep 3',length(ppHep_c)), 
+                                rep('Cholangiocytes',length(chol_c)), 'Non-inf Macs', 'Inf Macs', 'Mesenchymal', 
+                                rep('Endothelial',length(LSEC_c)), rep('Unknown/High Mito',length(unknown_c))))
+
+
+
+nrow(annot_info)
+nrow(color_df)
+color_df$labels == annot_info$label
+show_col(color_df$colors)
+annot_info2 = cbind(annot_info, color_df)
+head(annot_info2)
+
+(0:33)[!(0:33) %in% as.numeric(annot_info$clusters)]
+########## merging df_umap with annot_info data.frame
+embedd_df_rotated_2$umi = rownames(embedd_df_rotated_2)
+embedd_df_rotated_2 = merge(embedd_df_rotated_2, annot_info2, by.x='clusters', by.y='clusters', all.x=T, order=F)
+#### re-ordering the rows based on UMIs of the initial data
+embedd_df_rotated_2 <- embedd_df_rotated_2[match(colnames(merged_samples),embedd_df_rotated_2$umi),]
+embedd_df_rotated_2$umi == colnames(merged_samples)
+sum(embedd_df_rotated_2$umi != colnames(merged_samples))
+embedd_df_rotated_2$label_clust = paste0(embedd_df_rotated_2$label, ' (',embedd_df_rotated_2$clusters, ')')
+head(embedd_df_rotated_2)
+
+annot_info2$label_clust = paste0(annot_info2$label, ' (',annot_info2$clusters, ')')
+
+Colors = annot_info2$colors
+names(Colors) <- as.character(annot_info2$label)
+#names(Colors) <- as.character(annot_info2$label_clust)
+
+embedd_df_rotated_2$sample_name =  merged_samples$sample_name
+embedd_df_rotated_2$nuclear_fraction =  merged_samples$nuclear_fraction
+embedd_df_rotated_2$nCount_RNA = merged_samples$nCount_RNA
+embedd_df_rotated_2$strain = merged_samples$strain
+
+varimax_res = readRDS('~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC_varimax_res2.5_updated_July23.rds')
+#saveRDS(list(score=embedd_df_rotated_2, loading=rotatedLoadings),
+#          file = '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC_varimax_res2.5_updated_July23.rds')
+
+
+loading_df = data.frame(sapply(1:ncol(varimax_res$loading), function(i)varimax_res$loading[,i]))
+colnames(loading_df) = paste0('varPC_', 1:ncol(loading_df))
+head(loading_df)
+write.csv(loading_df, '~/rat_sham_sn_data/standardQC_results/sham_sn_merged_standardQC_varimax_res2.5_loadingDF_updated_July23.csv')
 
 
 check_qc_cor(merged_samples2, embedd_df_rotated_2[,PCs_to_check], 
@@ -162,26 +254,30 @@ check_qc_cor(merged_samples, embedd_df_rotated_2[,PCs_to_check],
 
 pdf('~/rat_sham_sn_data/VarimaxPCA_sham_sn_merged_nonHeps.pdf',width = 14,height=16) 
 
+i = 16
 for(i in PCs_to_check){ 
   pc_num = i
   rot_df <- data.frame(Varimax_1=embedd_df_rotated_2$Var.PC_1,
-                       emb_val=embedd_df_rotated_2[,pc_num],
+                       emb_val=embedd_df_rotated_2[,(pc_num+1)],
                        #cluster=as.character(merged_samples$final_cluster),
                        cluster=as.character(embedd_df_rotated_2$cluster),
-                       label = as.character(embedd_df_rotated_2$annot_TLH),
+                       label = as.character(embedd_df_rotated_2$labels),
+                       label_clust = as.character(embedd_df_rotated_2$label_clust),
                        sample_name=embedd_df_rotated_2$sample_name,
                        strain=embedd_df_rotated_2$strain,
                        nuclear_fraction = embedd_df_rotated_2$nuclear_fraction,
-                       nCount_RNA = embedd_df_rotated_2$nCount_RNA.y)
+                       nCount_RNA = embedd_df_rotated_2$nCount_RNA)
   
-  p1=ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=cluster))+geom_point()+
+  
+  ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=label))+geom_point()+
+    theme_classic()+ylab(paste0('Varimax_',i))+scale_color_manual(values=Colors)
+  ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=sample_name))+geom_point()+
     theme_classic()+ylab(paste0('Varimax_',i))+scale_color_manual(values=colorPalatte)
-  p2=ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=label))+geom_point()+
+  ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=strain))+geom_point()+
     theme_classic()+ylab(paste0('Varimax_',i))+scale_color_manual(values=colorPalatte)
-  p3=ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=sample_name))+geom_point()+
-    theme_classic()+ylab(paste0('Varimax_',i))+scale_color_manual(values=colorPalatte)
-  p6=ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=strain))+geom_point()+
-    theme_classic()+ylab(paste0('Varimax_',i))+scale_color_manual(values=colorPalatte)
+  
+  ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=cluster))+geom_point()+
+    theme_classic()+ylab(paste0('Varimax_',i))+scale_color_manual(values=Colors)
   
   p4=ggplot(rot_df, aes(x=Varimax_1, y=emb_val, color=nuclear_fraction))+geom_point()+
     theme_classic()+ylab(paste0('Varimax_',i))+scale_color_viridis(direction = -1)

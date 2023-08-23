@@ -72,7 +72,7 @@ merged_data$clusters = merged_samples$SCT_snn_res.2.5
 
 table(merged_data$cluster, merged_data$annot_IM) ## cluster 8 seems to be the macrophage population
 table(merged_data$clusters, merged_data$annot_IM) 
-mac_cluster_num = 8
+#mac_cluster_num = 8
 mac_cluster_num = 19
 
 macrophage_ids = colnames(merged_data)[merged_data$clusters == mac_cluster_num]
@@ -99,14 +99,19 @@ data_g = group_cell(count=sample_data$count,id=sample_data$sid,pred=df)
 
 ### use library size as an offset if you're using the count data. If not, each cell will be treated equally
 re = nebula(sample_data$count,sample_data$sid,pred=df,offset=sample_data$offset) 
-#re <- readRDS('~/rat_sham_sn_data/standardQC_results/nebula_nonInfMac_subcluster_results.rds')
+re <- readRDS('~/rat_sham_sn_data/standardQC_results/nebula_nonInfMac_subcluster_results.rds')
 
 re.df = data.frame(re$summary)
 re.df = re.df[,c(2,6,8)]
 head(re.df[order(re.df$logFC_strainLEW, decreasing = T),],30)
 head(re.df[order(re.df$p_strainLEW, decreasing = F),],20)
 re.df$score = -log10(re.df$p_strainLEW) * re.df$logFC_strainLEW
-head(re.df[order(re.df$score, decreasing = T),],20)
+re.df = re.df[order(re.df$score, decreasing = T),]
+head(re.df,20)
+
+
+length(varimax_df$gene)
+re.df$gene[1:20][re.df$gene[1:20] %in% varimax_df$gene[1:10]]
 
 
 write.csv(re.df[order(re.df$p_strainLEW, decreasing = F),], 
@@ -119,11 +124,11 @@ table_vis = table_vis[order(table_vis$score, decreasing = T),]
 
 colnames(table_vis)=c('Gene', 'p value', 'logFC(LEW/DA)', 'score')
 head(table_vis, 20)
-gridExtra::grid.table(head(table_vis, 20))
+gridExtra::grid.table(head(table_vis, 15))
 dev.off()
 
 
-table_vis <- table_vis[1:20,-4]
+table_vis <- table_vis[1:11,-4]
 grid.newpage()
 table_vis$`logFC(LEW/DA)` = round(table_vis$`logFC(LEW/DA)`, 2) 
 table_vis$`p value` = formatC(table_vis$`p value`, format = "e", digits = 2)
@@ -174,6 +179,11 @@ var_num = 15
 rotatedLoadings_ord = rotatedLoadings[order(rotatedLoadings[,var_num], decreasing = T),]
 varimax_df = data.frame(gene=rownames(rotatedLoadings_ord) ,loading=rotatedLoadings_ord[,var_num])
 head(varimax_df)
+
+
+
+
+
 nebula_df = data.frame(gene=re.df$gene,
                        nebula_p=re.df$p_strainLEW, 
                        nebula_logFC=re.df$logFC_strainLEW) #

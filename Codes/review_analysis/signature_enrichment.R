@@ -19,7 +19,8 @@ data_summary <- function(x) {
 
 
 var_num = 15
-genes_num = 30
+var_num = 5
+genes_num = 10
 
 #### loading the data
 
@@ -69,7 +70,9 @@ ggplot(scores.df, aes(y=signature_UCell, x=strain))+geom_boxplot(aes(fill=strain
   scale_fill_brewer(palette = 'Dark2')+stat_compare_means()+theme_classic()+ggtitle('Complete maps')
 
 ggplot(scores.df[scores.df$clusters==19,], aes(y=signature_UCell, x=strain))+geom_boxplot(aes(fill=strain))+
-  scale_fill_brewer(palette = 'Dark2')+stat_compare_means()+theme_classic()+ggtitle('Macrophage clusters')+
+  scale_fill_manual(values = c("#CC79A7","#0072B2"))+ #c("pink1", "skyblue1")
+  #scale_fill_brewer(palette = 'Dark2')+
+  stat_compare_means()+theme_classic()+ggtitle('Macrophage clusters')+
   theme(text = element_text(size=16.5),
         plot.title = element_text(hjust = 0.5),
         legend.title=element_text(size = 13))+ggtitle('')+ylab('Strain Sig (PC15) enrichment score')+xlab('')
